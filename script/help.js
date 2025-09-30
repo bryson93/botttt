@@ -6,7 +6,7 @@ module.exports.config = {
         aliases: ['help', 'commands', 'menu'],
         description: "Beginner's guide and command list",
         usage: "Help [page] or [command]",
-        credits: 'BRYSON',
+        credits: 'ARI',
 };
 
 module.exports.run = async function ({
@@ -30,17 +30,18 @@ module.exports.run = async function ({
 
                 if (!input || !isNaN(input)) {
                         let helpMessage = `╔═══════════════════════╗\n`;
-                        helpMessage += `║     ✦ BOT HELP MENU ✦    ║\n`;
+                        helpMessage += `     ✦ BOT HELP MENU ✦          \n`;
                         helpMessage += `╚═══════════════════════╝\n\n`;
                         
                         helpMessage += `◈ Command List (Page ${page}/${totalPages})\n`;
-                        helpMessage += `┌─────────────────────────┐\n`;
+                        helpMessage += `┌───────────────────────┐\n`;
 
                         for (let i = start; i < Math.min(end, commands.length); i++) {
-                                helpMessage += `│ ➤ ${i + 1}. ${prefix}${commands[i].padEnd(15)} │\n`;
+                                helpMessage += `│╭ ➤ ${i + 1}. ${prefix}${commands[i]}\n`;
+                                helpMessage += `│╰───────────────          \n`;
                         }
                         
-                        helpMessage += `└─────────────────────────┘\n\n`;
+                        helpMessage += `└───────────────────────┘\n\n`;
 
                         helpMessage += `⌕ Navigation:\n`;
                         helpMessage += `• Type ${prefix}help [page] - View other pages\n`;
@@ -49,11 +50,12 @@ module.exports.run = async function ({
 
                         if (page === 1 && eventCommands.length) {
                                 helpMessage += `❍ Event Commands:\n`;
-                                helpMessage += `┌─────────────────────────┐\n`;
+                                helpMessage += `┌───────────────────────┐\n`;
                                 eventCommands.forEach((eventCommand, index) => {
-                                        helpMessage += `│ ❐ E${index + 1}. ${prefix}${eventCommand.padEnd(15)} │\n`;
+                                        helpMessage += `│╭ ❐ E${index + 1}. ${prefix}${eventCommand}\n`;
+                                        helpMessage += `│╰───────────────         \n`;
                                 });
-                                helpMessage += `└─────────────────────────┘\n\n`;
+                                helpMessage += `└───────────────────────┘\n\n`;
                         }
 
                         helpMessage += `◎ Tip: Use "${prefix}help commandname" for detailed info!`;
@@ -98,26 +100,27 @@ module.exports.run = async function ({
 
                                 const message = `
 ╔═══════════════════════╗
-║    ❖ COMMAND INFO    ║
+     ❖ COMMAND INFO    
 ╚═══════════════════════╝
 
-➤ Name: ${name}
-◈ Version: ${versionMessage}
-⚬ Permission: ${roleMessage}
-⌚ Cooldown: ${cooldownMessage}
+╭ ➤ Name: ${name}
+│╭ ◈ Version: ${versionMessage}
+│╰───────────────
+╭ ➤ Permission: ${roleMessage}
+│╭ ⌚ Cooldown: ${cooldownMessage}
+│╰───────────────
+╭ ❏ Description:
+│   ${descriptionMessage}
+│╰───────────────
+╭ ◑ Aliases:
+│   ${aliasesMessage}
+│╰───────────────
+╭ ◎ Usage:
+│   ${usageMessage}
+│╰───────────────
+╭ ✎ Credits: ${creditsMessage}
+╰───────────────
 
-❏ Description:
-   ${descriptionMessage}
-
-◑ Aliases:
-   ${aliasesMessage}
-
-◎ Usage:
-   ${usageMessage}
-
-✎ Credits: ${creditsMessage}
-
-─────────────────────
 ◎ Use "${prefix}help" to see all commands
                                 `.trim();
 

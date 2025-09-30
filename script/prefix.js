@@ -14,8 +14,8 @@ try {
   config = JSON.parse(fs.readFileSync(path.join(__dirname, "../config.json")));
 } catch (e) {
   config.prefix = "[ no set ]";
-  config.botName = "Echo AI";
-  config.ownerName = "Ari"; 
+  config.botName = "Bryson Bot";
+  config.ownerName = "Bryson"; 
 }
 
 module.exports.config = {
@@ -138,8 +138,8 @@ async function makeCoolCard(botPrefix, botName, ownerName) {
 module.exports.run = async function ({ api, event }) {
   const { threadID, messageID } = event;
   const botPrefix = config.prefix || "[ no set ]";
-  const botName = config.botName || "Echo AI";
-  const ownerName = config.ownerName || "Ari";
+  const botName = config.botName || "Bryson Bot";
+  const ownerName = config.ownerName || "Bryson";
 
   const imgBuffer = await makeCoolCard(botPrefix, botName, ownerName);
   const filePath = path.join(__dirname, `prefix_${Date.now()}.png`);

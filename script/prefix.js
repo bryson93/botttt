@@ -24,7 +24,7 @@ module.exports.config = {
   role: 0,
   description: "bot prefix",
   prefix: true,
-  credits: "ari POGI",
+  credits: " bry",
   cooldowns: 5,
   category: "info"
 };
@@ -54,83 +54,136 @@ function drawParticles(ctx, width, height, count = 40) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.shadowColor = "#38bdf8";
+    ctx.shadowColor = "#6366f1";
     ctx.shadowBlur = 15;
     ctx.fill();
     ctx.shadowBlur = 0;
   }
 }
 
+function drawGlowingOrbs(ctx, width, height) {
+  // Large glowing orbs in background
+  const orbGradients = [
+    { x: width * 0.1, y: height * 0.2, color1: "rgba(99, 102, 241, 0.15)", color2: "rgba(99, 102, 241, 0.05)", size: 120 },
+    { x: width * 0.9, y: height * 0.7, color1: "rgba(236, 72, 153, 0.15)", color2: "rgba(236, 72, 153, 0.05)", size: 150 },
+    { x: width * 0.8, y: height * 0.2, color1: "rgba(245, 158, 11, 0.1)", color2: "rgba(245, 158, 11, 0.05)", size: 100 }
+  ];
+
+  orbGradients.forEach(orb => {
+    const gradient = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.size);
+    gradient.addColorStop(0, orb.color1);
+    gradient.addColorStop(1, orb.color2);
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(orb.x, orb.y, orb.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
 async function makeCoolCard(botPrefix, botName, ownerName) {
-  const width = 750, height = 460;
+  const width = 800, height = 500;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
+  // Modern gradient background
   const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-  bgGradient.addColorStop(0, "#0f2027");
-  bgGradient.addColorStop(0.5, "#203a43");
-  bgGradient.addColorStop(1, "#2c5364");
+  bgGradient.addColorStop(0, "#0f172a");
+  bgGradient.addColorStop(0.5, "#1e293b");
+  bgGradient.addColorStop(1, "#334155");
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
 
-  drawParticles(ctx, width, height, 50);
+  drawGlowingOrbs(ctx, width, height);
+  drawParticles(ctx, width, height, 60);
 
-  ctx.fillStyle = "rgba(255,255,255,0.1)";
-  ctx.shadowColor = "rgba(0,0,0,0.6)";
-  ctx.shadowBlur = 20;
+  // Main content card with glass morphism effect
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 10;
   ctx.beginPath();
-  ctx.roundRect(40, 110, width - 80, 310, 25);
+  ctx.roundRect(50, 120, width - 100, 320, 30);
   ctx.fill();
   ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Border effect
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(50, 120, width - 100, 320, 30);
+  ctx.stroke();
 
   try {
     const avatar = await loadImage("https://i.imgur.com/lGxhMfB.png");
     const centerX = width / 2;
     ctx.save();
     ctx.beginPath();
-    ctx.arc(centerX, 95, 60, 0, Math.PI * 2);
+    ctx.arc(centerX, 100, 70, 0, Math.PI * 2);
     ctx.closePath();
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 6;
-    ctx.shadowColor = "#0ea5e9";
-    ctx.shadowBlur = 25;
+    ctx.strokeStyle = "#6366f1";
+    ctx.lineWidth = 8;
+    ctx.shadowColor = "#6366f1";
+    ctx.shadowBlur = 30;
     ctx.stroke();
     ctx.clip();
-    ctx.drawImage(avatar, centerX - 60, 35, 120, 120);
+    ctx.drawImage(avatar, centerX - 70, 30, 140, 140);
     ctx.restore();
   } catch {}
 
-  await drawEmoji(ctx, emojiMap.bot, 120, 150, 42);
-  ctx.fillStyle = "#f8fafc";
-  ctx.font = "bold 34px OpenSans";
-  ctx.fillText("Bot Information:", 180, 185);
-
-  await drawEmoji(ctx, emojiMap.pin, 120, 215, 38);
-  ctx.fillStyle = "#facc15";
-  ctx.font = "bold 30px OpenSans";
-  ctx.fillText(`Prefix: ${botPrefix}`, 180, 245);
-
-  await drawEmoji(ctx, emojiMap.id, 120, 275, 38);
-  ctx.fillStyle = "#93c5fd";
-  ctx.font = "bold 30px OpenSans";
-  ctx.fillText(`Name: ${botName}`, 180, 305);
-
-  await drawEmoji(ctx, emojiMap.crown, 120, 335, 38);
-  ctx.fillStyle = "#fbbf24";
-  ctx.font = "bold 30px OpenSans";
-  ctx.fillText(`Owner: ${ownerName}`, 180, 365);
-
-  const gradient = ctx.createLinearGradient(200, 0, 550, 0);
-  gradient.addColorStop(0, "#f472b6");
-  gradient.addColorStop(0.25, "#facc15");
-  gradient.addColorStop(0.5, "#4ade80");
-  gradient.addColorStop(0.75, "#60a5fa");
-  gradient.addColorStop(1, "#c084fc");
-
-  ctx.fillStyle = gradient;
-  ctx.font = "italic 21px OpenSans-Regular";
+  // Title with modern typography
+  ctx.fillStyle = "#f1f5f9";
+  ctx.font = "bold 38px OpenSans";
   ctx.textAlign = "center";
-  ctx.fillText("Enjoy chatting with me!", width / 2, 410);
+  ctx.fillText("BOT INFORMATION", width / 2, 190);
+
+  // Information items with improved layout
+  const items = [
+    { emoji: emojiMap.pin, label: "Prefix", value: botPrefix, color: "#f59e0b", y: 240 },
+    { emoji: emojiMap.id, label: "Bot Name", value: botName, color: "#10b981", y: 300 },
+    { emoji: emojiMap.crown, label: "Owner", value: ownerName, color: "#ef4444", y: 360 }
+  ];
+
+  for (const item of items) {
+    await drawEmoji(ctx, item.emoji, 100, item.y - 25, 32);
+    
+    // Label
+    ctx.fillStyle = "#cbd5e1";
+    ctx.font = "26px OpenSans-Regular";
+    ctx.textAlign = "left";
+    ctx.fillText(item.label, 150, item.y);
+    
+    // Value with accent color
+    ctx.fillStyle = item.color;
+    ctx.font = "bold 28px OpenSans";
+    ctx.fillText(item.value, 150, item.y + 35);
+  }
+
+  // Decorative line separator
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(100, 270);
+  ctx.lineTo(width - 100, 270);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(100, 330);
+  ctx.lineTo(width - 100, 330);
+  ctx.stroke();
+
+  // Footer message with gradient text
+  const footerGradient = ctx.createLinearGradient(200, 0, 600, 0);
+  footerGradient.addColorStop(0, "#8b5cf6");
+  footerGradient.addColorStop(0.3, "#06b6d4");
+  footerGradient.addColorStop(0.6, "#10b981");
+  footerGradient.addColorStop(1, "#f59e0b");
+
+  ctx.fillStyle = footerGradient;
+  ctx.font = "italic 24px OpenSans-Regular";
+  ctx.textAlign = "center";
+  ctx.fillText("Enjoy chatting with me! ✨", width / 2, 430);
 
   return canvas.toBuffer();
 }

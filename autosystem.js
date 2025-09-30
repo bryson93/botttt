@@ -4,7 +4,8 @@ module.exports = async ({ api }) => {
   const configCustom = {
     autosetbio: {
       status: true,
-      bio: `🌟 Bot Owner: Unknown | ✨ Spreading Good Vibes 🎭`
+      bio: `❐❒ AUTOBOT ❒❐
+▣ site owner : bryson ▣`
     },
     greetings: {
       status: true,

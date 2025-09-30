@@ -3,8 +3,8 @@ module.exports.config = {
         version: '1.0.1',
         role: 0,
         hasPrefix: false,
-        aliases: ['help'],
-        description: "Beginner's guide",
+        aliases: ['help', 'commands', 'cmd'],
+        description: "Beginner's guide and command list",
         usage: "Help [page] or [command]",
         credits: 'ARI',
 };
@@ -29,23 +29,35 @@ module.exports.run = async function ({
                 const end = start + perPage;
 
                 if (!input || !isNaN(input)) {
-                        let helpMessage = `✦ ━━ ✦ 𝑩𝑶𝑻 𝑯𝑬𝑳𝑷 ✦ ━━ ✦\n\n`;
-                        helpMessage += `📜 Command List (Page ${page}/${totalPages}) 📜\n\n`;
-
+                        // 🎨 REDESIGNED HELP MESSAGE
+                        let helpMessage = `╔═══════════════════════╗\n`;
+                        helpMessage += `║       🤖 BOT HELP      ║\n`;
+                        helpMessage += `╚═══════════════════════╝\n\n`;
+                        
+                        helpMessage += `📖 Command List » Page ${page} of ${totalPages}\n\n`;
+                        
+                        // Command list with better formatting
                         for (let i = start; i < Math.min(end, commands.length); i++) {
-                                helpMessage += `╭〔${i + 1}〕 ${prefix}${commands[i]}\n╰───────────────\n`;
+                                helpMessage += `▫️ ${i + 1}. ${prefix}${commands[i]}\n`;
                         }
+                        
+                        helpMessage += `\n───────────────\n`;
+                        helpMessage += `🔹 Navigation:\n`;
+                        helpMessage += `• ${prefix}help [page] » View other pages\n`;
+                        helpMessage += `• ${prefix}help [command] » Command details\n`;
+                        helpMessage += `• Total Commands: ${commands.length}\n\n`;
 
-                        helpMessage += `\n➡️ Type: ${prefix}help [page] to view other pages\n`;
-                        helpMessage += `➡️ Type: ${prefix}help [command] for details`;
-
+                        // Event commands section
                         if (page === 1 && eventCommands.length) {
-                                helpMessage += `\n\n📌 Event List:\n`;
+                                helpMessage += `🎯 Event Commands:\n`;
                                 eventCommands.forEach((eventCommand, index) => {
-                                        helpMessage += `╭〔E${index + 1}〕 ${prefix}${eventCommand}\n╰───────────────\n`;
+                                        helpMessage += `▫️ E${index + 1}. ${prefix}${eventCommand}\n`;
                                 });
+                                helpMessage += `\n`;
                         }
 
+                        helpMessage += `💡 Tip: Use "${prefix}help commandname" for detailed info!`;
+                        
                         return api.sendMessage(helpMessage, event.threadID, event.messageID);
                 } else {
                         const command = [...Utils.handleEvent, ...Utils.commands].find(([key]) =>
@@ -65,40 +77,68 @@ module.exports.run = async function ({
                                         hasPrefix
                                 } = command;
 
+                                // 🎨 REDESIGNED COMMAND INFO
                                 const roleMessage =
                                         role !== undefined
                                                 ? (role === 0
-                                                        ? '➛ Permission: user'
+                                                        ? '👤 User'
                                                         : role === 1
-                                                                ? '➛ Permission: admin'
+                                                                ? '👑 Admin'
                                                                 : role === 2
-                                                                        ? '➛ Permission: thread Admin'
+                                                                        ? '⚡ Thread Admin'
                                                                         : role === 3
-                                                                                ? '➛ Permission: super Admin'
+                                                                                ? '💎 Super Admin'
                                                                                 : '')
                                                 : '';
 
-                                const aliasesMessage = aliases.length ? `➛ Aliases: ${aliases.join(', ')}\n` : '';
-                                const descriptionMessage = description ? `➛ Description: ${description}\n` : '';
-                                const usageMessage = usage ? `➛ Usage: ${usage}\n` : '';
-                                const creditsMessage = credits ? `➛ Credits: ${credits}\n` : '';
-                                const versionMessage = version ? `➛ Version: ${version}\n` : '';
-                                const cooldownMessage = cooldown ? `➛ Cooldown: ${cooldown} second(s)\n` : '';
+                                const aliasesMessage = aliases.length ? `🔤 Aliases: ${aliases.join(', ')}` : '';
+                                const descriptionMessage = description ? `📝 ${description}` : '';
+                                const usageMessage = usage ? `💬 Usage: ${usage}` : '';
+                                const creditsMessage = credits ? `👨‍💻 Credits: ${credits}` : '';
+                                const versionMessage = version ? `🔢 Version: ${version}` : '';
+                                const cooldownMessage = cooldown ? `⏰ Cooldown: ${cooldown}s` : '';
 
-                                const message = `「 Command Info 」\n\n➛ Name: ${name}\n${versionMessage}${roleMessage}\n${aliasesMessage}${descriptionMessage}${usageMessage}${creditsMessage}${cooldownMessage}`;
+                                const message = 
+                                `╔═══════════════════════╗\n` +
+                                `║     🎯 COMMAND INFO   ║\n` +
+                                `╚═══════════════════════╝\n\n` +
+                                `🔹 Command: ${prefix}${name}\n` +
+                                `${versionMessage ? `🔹 ${versionMessage}\n` : ''}` +
+                                `${roleMessage ? `🔹 Permission: ${roleMessage}\n` : ''}` +
+                                `${aliasesMessage ? `🔹 ${aliasesMessage}\n` : ''}` +
+                                `${descriptionMessage ? `🔹 ${descriptionMessage}\n` : ''}` +
+                                `${usageMessage ? `🔹 ${usageMessage}\n` : ''}` +
+                                `${creditsMessage ? `🔹 ${creditsMessage}\n` : ''}` +
+                                `${cooldownMessage ? `🔹 ${cooldownMessage}\n` : ''}` +
+                                `\n💡 Use "${prefix}help" to see all commands.`;
+                                
                                 return api.sendMessage(message, event.threadID, event.messageID);
                         } else {
-                                return api.sendMessage('❌ Command not found.', event.threadID, event.messageID);
+                                return api.sendMessage(
+                                        `❌ Command "${input}" not found.\n` +
+                                        `💡 Use "${prefix}help" to see available commands.`, 
+                                        event.threadID, 
+                                        event.messageID
+                                );
                         }
                 }
         } catch (error) {
                 console.log(error);
+                return api.sendMessage(
+                        '⚠️ An error occurred while processing your request.', 
+                        event.threadID, 
+                        event.messageID
+                );
         }
 };
 
 module.exports.handleEvent = async function ({ api, event, prefix }) {
         const { threadID, messageID, body } = event;
-        const message = prefix ? 'This is my prefix: ' + prefix : "🗨️ 𝗠𝘆 𝗽𝗿𝗲𝗳𝗶𝘅 𝗶𝘀...";
+        const message = prefix ? 
+                `🔹 My prefix is: ${prefix}\n` +
+                `💡 Type "${prefix}help" to see all commands!` : 
+                "🗨️ My prefix is...";
+                
         if (body?.toLowerCase().startsWith('prefix')) {
                 api.sendMessage(message, threadID, messageID);
         }

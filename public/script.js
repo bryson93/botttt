@@ -1,4 +1,3 @@
-// ORIGINAL JAVASCRIPT CODE - UNCHANGED
 document.getElementById('agreeCheckbox').addEventListener('change', function() {
   document.getElementById('submitButton').disabled = !this.checked;
 });

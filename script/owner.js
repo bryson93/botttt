@@ -4,7 +4,7 @@ const fs = require("fs");
 module.exports.config = {
   name: "owner",
   version: "1.0.0",
-  credits: "bryson",
+  credits: "Ari A.K.A pogi",
   description: "Show info card about the owner",
   usage: "{p}owner",
   cooldown: 3
@@ -63,6 +63,12 @@ module.exports.run = async ({ api, event }) => {
     ctx.drawImage(avatar, 95, 115, 170, 170);
     ctx.restore();
 
+    const robotEmoji = await loadImage("https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png");
+    const computerEmoji = await loadImage("https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4bb.png");
+    const rocketEmoji = await loadImage("https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f680.png");
+    const globeEmoji = await loadImage("https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f310.png");
+    const lightningEmoji = await loadImage("https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/26a1.png");
+
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 52px 'Segoe UI', Arial, sans-serif";
     ctx.shadowColor = "rgba(0, 255, 255, 0.8)";
@@ -70,17 +76,25 @@ module.exports.run = async ({ api, event }) => {
     ctx.fillText("BRYSON", 350, 160);
     ctx.shadowBlur = 0;
 
+    ctx.drawImage(robotEmoji, 350, 175, 30, 30);
     ctx.fillStyle = "#00ffff";
     ctx.font = "bold 28px 'Segoe UI', Arial, sans-serif";
-    ctx.fillText("🤖 AUTOBOT OWNER 🤖", 350, 200);
+    ctx.fillText("AUTOBOT OWNER", 390, 200);
+    ctx.drawImage(robotEmoji, 650, 175, 30, 30);
 
+    ctx.drawImage(computerEmoji, 320, 225, 25, 25);
     ctx.fillStyle = "#e0e0e0";
     ctx.font = "24px 'Segoe UI', Arial, sans-serif";
-    
-    ctx.fillText("💻 Full Stack Developer", 350, 250);
-    ctx.fillText("🚀 Bot Creator & Innovator", 350, 290);
-    ctx.fillText("🌐 Always Online", 350, 330);
-    ctx.fillText("⚡ Daily Innovation", 350, 370);
+    ctx.fillText("Full Stack Developer", 355, 250);
+
+    ctx.drawImage(rocketEmoji, 320, 265, 25, 25);
+    ctx.fillText("Bot Creator & Innovator", 355, 290);
+
+    ctx.drawImage(globeEmoji, 320, 305, 25, 25);
+    ctx.fillText("Always Online", 355, 330);
+
+    ctx.drawImage(lightningEmoji, 320, 345, 25, 25);
+    ctx.fillText("Daily Innovation", 355, 370);
 
     ctx.strokeStyle = "rgba(0, 255, 255, 0.3)";
     ctx.lineWidth = 1;

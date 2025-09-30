@@ -1,70 +1,42 @@
+# 🤖 Bry's Automated Bot
 
-# ⌬ AUTO𝘽𝙊𝙏 ⌬
+<div align="center">
 
-> ⚡ Intelligent. Fast. Customizable.
+![Bot Banner](https://media2.giphy.com/media/v1.Y2lkPTZjMDliOTUyZjRnaHlmZWhzZWxjbnh1NnZyM2pxaHdkY24wZ3Q2Nmtkem04MGtyYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/EDRdYt04QK2d2/giphy.gif)
 
-<p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=26&duration=2800&pause=2000&color=00F5FF&center=true&vCenter=true&width=600&lines=AUTO+BOT;Your+Smart+Messenger+Assistant;Fast+%7C+Reliable+%7C+Customizable" alt="Autobot Banner"/>
-</p>
+## 🚀 Modern Facebook Automation Bot
 
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00f5ff,100:0077ff&height=150&section=footer&text=AUTO+BOT&fontSize=40&fontAlign=50&fontAlignY=40&animation=fadeIn&desc=Created+by:+Ari&descAlign=50&descAlignY=70&fontColor=ffffff" />
-</p>
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Facebook API](https://img.shields.io/badge/Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white)
 
----
-
-# 🤖 AutoBot
-
-A powerful and flexible chatbot framework.  
-Built for speed, security, and customization.
-
----
+</div>
 
 ## ✨ Features
-- ⚡ Fast and lightweight  
-- 🔒 Secure and reliable  
-- 🛠️ Easy to customize  
-- 🌐 API integrations  
 
----
+| 🎯 Feature | 📝 Description |
+|-----------|---------------|
+| 🔐 **AppState Login** | Secure Facebook authentication using AppState |
+| ⚡ **Command System** | Customizable commands and event handlers |
+| 🎨 **Modern UI** | Beautiful, responsive dark theme design |
+| 🔧 **Easy Configuration** | Simple setup with intuitive interface |
+| 📱 **Responsive Design** | Works perfectly on all devices |
+| 🎵 **Background Music** | Optional background audio |
 
-## 📦 Installation
+## 🛠️ Installation
 
-cd autobot
-npm install
+### Prerequisites
+- 🌐 Web browser with JavaScript enabled
+- 🔑 Facebook AppState
+- 📝 Basic understanding of Facebook APIs
 
+### Quick Start
+1. **Clone or Download** the project files
+2. **Open** `index.html` in your web browser
+3. **Paste** your Facebook AppState
+4. **Select** desired commands
+5. **Configure** prefix and admin UID
+6. **Agree** to terms and activate! 🎉
 
----
-
-👨‍💻 Developer
-
-Made with ❤️ by Ari
-
-
-
-# 🌌 AUTO𝘽𝙊𝙏
-
-
-
- ╔══════════════════════════╗
-
-║  ⚡ Fast     ║   🔒 Secure    ║    🤖 Smart            ║
-
- ╚══════════════════════════╝
-
-### 🌟 Highlights
-- ✨ Auto response system
-- ⚙️ Custom command handler
-- 📡 API-ready integration
-- 🎨 Aesthetic canvas support
-
----
-
-### 🛠 Installation
-
-npm install autobot
-
-
----
-
-👑 Developer: Ari
+## 📁 Project Structure

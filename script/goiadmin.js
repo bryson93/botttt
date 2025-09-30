@@ -2,7 +2,7 @@ module.exports.config = {
   name: "goiadmin",
   version: "1.0.0",
   hasPermission: 0,
-  credits: "AJ/ARI",
+  credits: "BY",
   description: "Auto reply kapag binanggit ang pangalan ng admin",
   commandCategory: "autobot",
   usages: "Automatic reply kapag tinawag si admin",
@@ -14,7 +14,7 @@ module.exports.handleEvent = async function ({ event, api }) {
 
   const message = event.body.toLowerCase();
 
-  const pattern = /\bari\b/;
+  const pattern = /\bbryson\b/;
 
   if (pattern.test(message)) {
     const responses = [

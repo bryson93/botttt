@@ -40,7 +40,7 @@ module.exports.run = async ({ api, event }) => {
 
     ctx.fillStyle = "#fff";
     ctx.font = "bold 48px Poppins";
-    ctx.fillText("ARI", 300, 160);
+    ctx.fillText("BRYSON", 300, 160);
 
     ctx.fillStyle = "#ffccff";
     ctx.font = "bold 32px Poppins";

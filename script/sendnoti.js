@@ -11,10 +11,8 @@ module.exports.config = {
 };
 
 module.exports.run = async ({ api, event, args }) => {
-    // Replace 'your_developer_uid' with the actual UID of the developer who should have access
     const allowedUID = ['61578130127315']; 
 
-    // Check if the user sending the command is the developer
     if (!allowedUID.includes(event.senderID)) {
         return api.sendMessage("› You are not authorized to use this command.", event.threadID);
     }
@@ -23,9 +21,19 @@ module.exports.run = async ({ api, event, args }) => {
     let sentCount = 0;
     const custom = args.join(' ');
 
+    if (!custom) {
+        return api.sendMessage("› Please provide a message to send.", event.threadID);
+    }
+
     async function sendMessage(thread) {
         try {
-            await api.sendMessage(`𝙉𝙊𝙏𝙄𝘾𝙀 𝙁𝙍𝙊𝙈 𝘿𝙀𝙑𝙀𝙇𝙊𝙋𝙀𝙍\n ----------------\n Developer Name: ARI\n ---------------\n\n『𝗡𝗼𝘁𝗶𝗰𝗲』"${custom}"`, thread.threadID);
+            await api.sendMessage(`✦━─━─━─━─◈─━─━─━─━✦
+   ⚜ NOTICE FROM DEV ⚜
+✦━─━─━─━─◈─━─━─━─━✦
+
+⌗ Developer: BRYSON
+
+『𝗡𝗼𝘁𝗶𝗰𝗲』 ➺ "${custom}"`, thread.threadID);
             sentCount++;
         } catch (error) {
             console.error("Error sending a message:", error);
@@ -42,7 +50,7 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     if (sentCount > 0) {
-        api.sendMessage(`› Sent the notification successfully.`, event.threadID);
+        api.sendMessage(`› Sent the notification successfully to ${sentCount} groups.`, event.threadID);
     } else {
         api.sendMessage("› No eligible group threads found to send the message to.", event.threadID);
     }

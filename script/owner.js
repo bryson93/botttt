@@ -4,7 +4,7 @@ const fs = require("fs");
 module.exports.config = {
   name: "owner",
   version: "1.0.0",
-  credits: "Ari A.K.A pogi",
+  credits: "bryson",
   description: "Show info card about the owner",
   usage: "{p}owner",
   cooldown: 3
@@ -12,44 +12,86 @@ module.exports.config = {
 
 module.exports.run = async ({ api, event }) => {
   try {
-    const width = 800;
-    const height = 400;
+    const width = 900;
+    const height = 500;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext("2d");
 
     const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, "#06b6d4");
-    gradient.addColorStop(1, "#ec4899");
+    gradient.addColorStop(0, "#0f0c29");
+    gradient.addColorStop(0.5, "#302b63");
+    gradient.addColorStop(1, "#24243e");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.shadowColor = "rgba(0,255,255,0.7)";
-    ctx.shadowBlur = 25;
-    ctx.fillRect(20, 20, width - 40, height - 40);
+    ctx.fillStyle = "rgba(255,255,255,0.03)";
+    for (let i = 0; i < width; i += 40) {
+      for (let j = 0; j < height; j += 40) {
+        ctx.fillRect(i, j, 2, 2);
+      }
+    }
 
+    ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(30, 30, width - 60, height - 60, 20);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowColor = "rgba(0, 255, 255, 0.5)";
+    ctx.shadowBlur = 20;
+    ctx.stroke();
     ctx.shadowBlur = 0;
 
-    const avatar = await loadImage("https://i.imgur.com/HvNZezn.png");
+    const avatar = await loadImage("https://i.imgur.com/GSU0fOb.jpeg");
     ctx.save();
+    
+    const avatarGradient = ctx.createLinearGradient(80, 100, 280, 300);
+    avatarGradient.addColorStop(0, "#00dbde");
+    avatarGradient.addColorStop(1, "#fc00ff");
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = avatarGradient;
     ctx.beginPath();
-    ctx.arc(150, 200, 100, 0, Math.PI * 2, true);
+    ctx.arc(180, 200, 90, 0, Math.PI * 2, true);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(180, 200, 85, 0, Math.PI * 2, true);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(avatar, 50, 100, 200, 200);
+    ctx.drawImage(avatar, 95, 115, 170, 170);
     ctx.restore();
 
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 48px Poppins";
-    ctx.fillText("BRYSON", 300, 160);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 52px 'Segoe UI', Arial, sans-serif";
+    ctx.shadowColor = "rgba(0, 255, 255, 0.8)";
+    ctx.shadowBlur = 10;
+    ctx.fillText("BRYSON", 350, 160);
+    ctx.shadowBlur = 0;
 
-    ctx.fillStyle = "#ffccff";
-    ctx.font = "bold 32px Poppins";
-    ctx.fillText("⚡ Autobot Owner ⚡", 300, 210);
+    ctx.fillStyle = "#00ffff";
+    ctx.font = "bold 28px 'Segoe UI', Arial, sans-serif";
+    ctx.fillText("🤖 AUTOBOT OWNER 🤖", 350, 200);
 
-    ctx.fillStyle = "#e5e5e5";
-    ctx.font = "22px Poppins";
-    ctx.fillText(" Full Stack Coder • Creator of Bots", 300, 260);
-    ctx.fillText(" Always Online • Innovating Everyday", 300, 300);
+    ctx.fillStyle = "#e0e0e0";
+    ctx.font = "24px 'Segoe UI', Arial, sans-serif";
+    
+    ctx.fillText("💻 Full Stack Developer", 350, 250);
+    ctx.fillText("🚀 Bot Creator & Innovator", 350, 290);
+    ctx.fillText("🌐 Always Online", 350, 330);
+    ctx.fillText("⚡ Daily Innovation", 350, 370);
+
+    ctx.strokeStyle = "rgba(0, 255, 255, 0.3)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(350, 220);
+    ctx.lineTo(650, 220);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.font = "16px 'Segoe UI', Arial, sans-serif";
+    ctx.fillText("Leading the future of automation", 350, 420);
 
     const path = __dirname + "/cache/owner_card.png";
     const buffer = canvas.toBuffer("image/png");
@@ -57,7 +99,7 @@ module.exports.run = async ({ api, event }) => {
 
     api.sendMessage(
       {
-        body: "👑 𝔬𝔴𝔫𝔢𝔯 𝔦𝔫𝔣𝔬 👑",
+        body: "👑 𝕺𝖜𝖓𝖊𝖗 𝕴𝖓𝖋𝖔𝖗𝖒𝖆𝖙𝖎𝖔𝖓 👑\n✦ Founder & Lead Developer\n✦ Full Stack Specialist\n✦ Innovation Driven",
         attachment: fs.createReadStream(path)
       },
       event.threadID,

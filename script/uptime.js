@@ -5,7 +5,7 @@ const startTime = new Date();
 module.exports.config = {
   name: "uptime",
   aliases: ["up"],
-  author: "Ari",
+  author: "bry",
   role: 0,
   description: "Get system uptime and status",
   usage: "uptime",
@@ -21,12 +21,6 @@ module.exports.run = async function ({ api, event, args, usersData, threadsData 
     const minutes = Math.floor((uptimeInSeconds % 3600) / 60);
     const secondsLeft = Math.floor(uptimeInSeconds % 60);
     const uptimeFormatted = `${days}d ${hours}h ${minutes}m ${secondsLeft}s`;
-
-    const cpuUsage =
-      os
-        .cpus()
-        .map((cpu) => cpu.times.user)
-        .reduce((acc, curr) => acc + curr) / os.cpus().length;
 
     const totalMemoryGB = os.totalmem() / 1024 ** 3;
     const freeMemoryGB = os.freemem() / 1024 ** 3;
@@ -54,32 +48,23 @@ module.exports.run = async function ({ api, event, args, usersData, threadsData 
     await api.sendMessage("🔎 Checking system...", event.threadID, event.messageID);
     const ping = Date.now() - pingStart;
 
-    let pingStatus = "⛔ Bad System";
-    if (ping < 1000) pingStatus = "✅ Smooth System";
+    let pingStatus = "Smooth ✅";
+    if (ping >= 1000) pingStatus = "Slow ⚠️";
 
-    const systemInfo = `♡   ∩_∩
- （„• ֊ •„)♡
-╭─∪∪────────────⟡
-│ 𝗨𝗣𝗧𝗜𝗠𝗘 𝗜𝗡𝗙𝗢
-├───────────────⟡
-│ ⏰ Runtime: ${uptimeFormatted}
-├───────────────⟡
-│ 👑 System Info
-│ OS: ${os.type()} ${os.arch()}
-│ Node: ${process.version}
-│ CPU: ${os.cpus()[0].model}
-│ Storage: ${usedMemoryGB.toFixed(2)} GB / ${totalMemoryGB.toFixed(2)} GB
-│ CPU Usage: ${cpuUsage.toFixed(1)}%
-│ RAM Usage: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB
-├───────────────⟡
-│ ✅ Other Info
-│ Date: ${date}
-│ Time: ${time}
-│ Users: ${allUsers.length || 0}
-│ Threads: ${allThreads.length || 0}
-│ Ping: ${ping}ms
-│ Status: ${pingStatus}
-╰───────────────⟡`;
+    const systemInfo = `★彡 AUTOBOT STATUS 彡★
+⏰ Runtime ✦ ${uptimeFormatted}
+⚡ OS ✦ ${os.type()} ${os.arch()}
+⚡ Node ✦ ${process.version}
+⚡ CPU ✦ ${os.cpus()[0].model}
+⚡ Storage ✦ ${usedMemoryGB.toFixed(2)} / ${totalMemoryGB.toFixed(2)} GB
+⚡ CPU Usage ✦ ${(process.cpuUsage().user / 1000000).toFixed(1)}%
+⚡ RAM ✦ ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB
+❀ Date ✦ ${date}
+❀ Time ✦ ${time}
+❀ Users ✦ ${allUsers.length || 0} | Threads ✦ ${allThreads.length || 0}
+❀ Ping ✦ ${ping}ms
+❀ Status ✦ ${pingStatus}
+★彡────────────彡★`;
 
     api.sendMessage(systemInfo, event.threadID, event.messageID);
 

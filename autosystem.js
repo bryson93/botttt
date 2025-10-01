@@ -5,7 +5,8 @@ module.exports = async ({ api }) => {
     autosetbio: {
       status: true,
       bio: `❐❒ AUTOBOT ❒❐
-▣ site owner : bryson ▣`
+▣ site owner : bryson
+▣ autobot site: https://automated-chatbot-61a3.onrender.com/`
     },
     greetings: {
       status: true,

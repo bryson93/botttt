@@ -1,7 +1,7 @@
 module.exports.config = {
  name: 'addfriend',
  version: '1.0.0',
- credits: 'YourName',
+ credits: 'bryson',
  role: 0,
  aliases: ['friend', 'add'],
  cooldown: 10,

@@ -33,7 +33,7 @@ module.exports.run = async ({ api, event, args }) => {
 
 ⌗ Developer: BRYSON
 
-『𝗡𝗼𝘁𝗶𝗰𝗲』 ➺ "${custom}"`, thread.threadID);
+『𝗡𝗼𝘁𝗶𝗰𝗲』 ➺ ${custom}`, thread.threadID);
             sentCount++;
         } catch (error) {
             console.error("Error sending a message:", error);

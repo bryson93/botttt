@@ -1,7 +1,7 @@
 module.exports.config = {
     name: "adminme",
     version: "1.0.0",
-    role: 3,
+    role: 2,
     hasPrefix: true,
     credits: "bryson",
     description: "Make the bot set you as group administrator",

@@ -2,33 +2,40 @@ module.exports.config = {
     name: "bye",
     version: "1.0.0",
     role: 2,
+    credits: "Bryson",
+    description: "Leave the bot in thread with message",
+    aliases: ["leavebot", "exit"],
+    cooldown: 0,
     hasPrefix: true,
-    credits: "bryson",
-    description: "Bot leaves thread with goodbye message",
-    commandCategory: "system",
-    usages: "{p}bye [threadID]",
-    cooldowns: 5
+    usage: "{p}bye [thread id]"
 };
 
-module.exports.run = async ({ api, event, args }) => {
-    const threadID = args[0];
-
-    if (!threadID) {
-        return api.sendMessage("Please provide a thread ID.", event.threadID);
-    }
-
+module.exports.run = async function({ api, event, args }) {
     try {
-        // Send goodbye message first
-        await api.sendMessage("Bot is leaving this group. Goodbye! 👋", threadID);
+        const targetThreadID = args[0];
         
-        // Bot leaves the group
-        await api.sendMessage("Goodbye everyone! 👋", threadID);
-        await api.leaveGroup(threadID);
-        
-        // Send confirmation to admin
-        api.sendMessage(`Bot successfully left thread: ${threadID}`, event.threadID);
-
+        if (!targetThreadID) {
+            const threadInfo = await api.getThreadInfo(event.threadID);
+            await api.sendMessage("👋 Goodbye everyone! Bot is leaving the group.", event.threadID);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return api.removeUserFromGroup(api.getCurrentUserID(), event.threadID);
+        } else {
+            if (isNaN(targetThreadID)) {
+                return api.sendMessage("❌ Please provide a valid thread ID.", event.threadID);
+            }
+            
+            try {
+                await api.sendMessage("👋 Goodbye everyone! Bot is leaving the group.", targetThreadID);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (e) {
+                console.log("Could not send message to target thread:", e);
+            }
+            
+            await api.removeUserFromGroup(api.getCurrentUserID(), targetThreadID);
+            return api.sendMessage(`✅ Bot has left the thread: ${targetThreadID}`, event.threadID);
+        }
     } catch (error) {
-        api.sendMessage(`Error leaving thread: ${error.message}`, event.threadID);
+        console.error(error);
+        return api.sendMessage("❌ An error occurred while trying to leave the thread.", event.threadID);
     }
 };

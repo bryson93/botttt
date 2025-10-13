@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { createCanvas, loadImage, registerFont } = require('canvas');
 
 module.exports.config = {
     name: "welcome",
@@ -21,12 +20,15 @@ module.exports.handleEvent = async function ({ api, event }) {
     const memberCount = groupInfo.participantIDs.length;
 
     const names = [];
+    const userIDs = [];
+    
     for (const participant of addedParticipants) {
         const userID = participant.userFbId || participant.userId || participant.id;
         if (!userID) continue;
 
         const info = await api.getUserInfo(userID);
         names.push(info[userID]?.name || "New Member");
+        userIDs.push(userID);
     }
 
     // Check if the bot is among the added participants
@@ -37,8 +39,7 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     if (isBotAdded) {
         // Bot joining group message
-        const botMessage = `
-⟡──────────────────────⟡
+        const botMessage = `⟡──────────────────────⟡
      BOT CONNECTION ESTABLISHED
 ⟡──────────────────────⟡
 
@@ -49,32 +50,32 @@ module.exports.handleEvent = async function ({ api, event }) {
 💬 Type: help to view all functions.  
 
 System running normally.
-⟡──────────────────────⟡
-        `;
+⟡──────────────────────⟡`;
         
         await api.sendMessage({
             body: botMessage
         }, event.threadID);
     } else {
-        // User joining group message
-        const userName = names.join(", ");
-        const welcomeMessage = `
-⟡──────────────────────⟡
+        // User joining group message with mentions
+        const welcomeMessage = `⟡──────────────────────⟡
   USER CONNECTION SUCCESSFULLY 
 ⟡──────────────────────⟡
 
-A warm welcome to "${userName}".  
-You are now part of "${groupName}".  
+A warm welcome to ${userIDs.map(id => `@${id}`).join(' ')}.  
+You are now part of ${groupName}.  
   
 Total members: ${memberCount}
 
 Status: Active  
 System: Running smoothly.
-⟡──────────────────────⟡
-        `;
+⟡──────────────────────⟡`;
         
         await api.sendMessage({
-            body: welcomeMessage
+            body: welcomeMessage,
+            mentions: userIDs.map((id, index) => ({
+                tag: `@${names[index]}`,
+                id: id
+            }))
         }, event.threadID);
     }
 };

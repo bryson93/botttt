@@ -18,12 +18,14 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     try {
+        // Send goodbye message first
         await api.sendMessage("Bot is leaving this group. Goodbye! 👋", threadID);
-
-        setTimeout(async () => {
-            await api.leaveGroup(threadID);
-        }, 2000);
-
+        
+        // Bot leaves the group
+        await api.sendMessage("Goodbye everyone! 👋", threadID);
+        await api.leaveGroup(threadID);
+        
+        // Send confirmation to admin
         api.sendMessage(`Bot successfully left thread: ${threadID}`, event.threadID);
 
     } catch (error) {

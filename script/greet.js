@@ -14,7 +14,7 @@ module.exports.handleEvent = async function ({ event, api }) {
   if (!message) return;
 
   const greetings = [
-    "hi", "hello", "hey", "yo", "sup", "heya", "hipo",
+    "hi", "hai", "hello", "hey", "yo", "sup", "zup", "heya", "hipo",
     "hola", "hi po", "halow", "wassup", "musta",
     "kumusta", "kamusta", "oy", "oi"
   ];
@@ -26,7 +26,7 @@ module.exports.handleEvent = async function ({ event, api }) {
       "ano na naman ba? panay ka hi at hello",
       "puro nalang ba tayo hi at hello?",
       "hi babe, kain?",
-      "hi, nakita mo ba owner kong si ari?",
+      "hi, nakita mo ba owner kong si bryson?",
       "hi bitch, how's your day?",
       "hi po, send boobies cravings lang 🥺🥺💔",
       "hipo",

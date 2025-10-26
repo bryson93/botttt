@@ -71,7 +71,7 @@ module.exports.run = async function ({ api, event, args }) {
         "↳ 𝗖𝗼𝗻𝘁𝗶𝗻𝘂𝗲𝗱\n━━━━━━━━━━━━━━━━━━\n";
       
       const footer = isFirst ? 
-        "\n━━━━━━━━━━━━━━━━━━\n💡 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗚𝗣𝗧-5 | ✨ 𝗕𝘆 𝗕𝗿𝘆𝘀𝗼𝗻" : 
+        "\n━━━━━━━━━━━━━━━━━━\n💡 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗚𝗣𝗧-5 | ✨ 𝗕𝘆 𝗯𝗿𝘆𝘀𝗼𝗻" : 
         "\n━━━━━━━━━━━━━━━━━━";
       
       return `${header}${text}${footer}`;
@@ -93,31 +93,13 @@ module.exports.run = async function ({ api, event, args }) {
     // Edit the waiting message with the first part of response
     await api.editMessage(messageParts[0], waitingMessage.messageID);
 
-    // Send additional parts as new messages if needed
-    if (messageParts.length > 1) {
-      for (let i = 1; i < messageParts.length; i++) {
-        await api.sendMessage(messageParts[i], threadID);
-        // Add small delay between messages for better UX
-        if (i < messageParts.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-    }
-
   } catch (err) {
     console.error("[ai.js] API Error:", err.message);
     
-    let errorDesign = "";
-    
-    if (err.code === 'ECONNREFUSED') {
-      errorDesign = "🌐 𝗖𝗼𝗻𝗻𝗲𝗰𝘁𝗶𝗼𝗻 𝗙𝗮𝗶𝗹𝗲𝗱\n━━━━━━━━━━━━━━━━━━\nUnable to establish connection with AI service.\n\n🛠️ 𝗦𝘂𝗴𝗴𝗲𝘀𝘁𝗲𝗱 𝗮𝗰𝘁𝗶𝗼𝗻𝘀:\n• Check your internet connection\n• Wait a few minutes\n• Try again later\n━━━━━━━━━━━━━━━━━━\n🔧 Service will resume shortly";
-    } else if (err.code === 'ETIMEDOUT') {
-      errorDesign = "⏰ 𝗥𝗲𝗾𝘂𝗲𝘀𝘁 𝗧𝗶𝗺𝗲𝗱 𝗢𝘂𝘁\n━━━━━━━━━━━━━━━━━━\nThe AI is taking longer than expected to respond.\n\n⚡ 𝗧𝗿𝘆 𝘁𝗵𝗶𝘀:\n• Simplify your question\n• Ask again in 30 seconds\n• Check your connection\n━━━━━━━━━━━━━━━━━━\n🔄 Retrying usually works!";
-    } else {
-      errorDesign = "⚠️ 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗨𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n━━━━━━━━━━━━━━━━━━\n❌ Failed to reach AI API.\n🔧 Please try again later.\n📞 Contact admin if issue persists.\n━━━━━━━━━━━━━━━━━━\n✨ Still here to help!";
-    }
-    
     // Edit waiting message to show error
-    return api.editMessage(errorDesign, waitingMessage.messageID);
+    return api.editMessage(
+      "⚠️ 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗨𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n━━━━━━━━━━━━━━━━━━\n❌ Failed to reach AI API.\n🔧 Please try again later.\n━━━━━━━━━━━━━━━━━━\n✨ Still here to help!",
+      waitingMessage.messageID
+    );
   }
 };

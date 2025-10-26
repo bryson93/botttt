@@ -1,52 +1,104 @@
-const axios = require('axios');
+const axios = require("axios");
 
 module.exports.config = {
-  name: 'ai',
-  version: '1.0.0',
+  name: "ai",
+  version: "1.0.0",
+  hasPermission: 0,
+  credits: "bryson",
+  description: "Ask the AI a question and get a response.",
+  commandCategory: "ai",
+  usages: "ai [question]",
+  cooldowns: 5,
   role: 0,
-  hasPrefix: false,
-  aliases: ['assistant', 'ask'],
-  description: "Chat with ChatGPT-4 API",
-  usage: "chatgpt [your question]",
-  credits: 'Vern',
-  cooldown: 3,
+  hasPrefix: true
 };
 
-module.exports.run = async function({ api, event, args }) {
-  const promptText = args.join(" ").trim();
-  const userReply = event.messageReply?.body || '';
-  const finalPrompt = `${userReply} ${promptText}`.trim();
-  const senderID = event.senderID;
-  const threadID = event.threadID;
-  const messageID = event.messageID;
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const prompt = args.join(" ");
 
-  if (!finalPrompt) {
-    return api.sendMessage("❌ Please provide a prompt or reply to a message.", threadID, messageID);
+  if (!prompt) {
+    return api.sendMessage(
+      "❓ Please provide a question to ask AI.\n\nUsage: ai What is your name?",
+      threadID,
+      messageID
+    );
   }
 
-  api.sendMessage('🤖 𝗩-𝗔𝗦𝗦𝗜𝗦𝗧𝗔𝗡𝗧 is processing your request...', threadID, async (err, info) => {
-    if (err) return;
+  // Send waiting message
+  const waitingMessage = await api.sendMessage(
+    "⏳ AI is thinking... Please wait a moment.",
+    threadID
+  );
 
-    try {
-      const { data } = await axios.get("https://xvi-rest-api.vercel.app/api/chatgpt4", {
-        params: { prompt: finalPrompt }
-      });
+  try {
+    const res = await axios.get("https://arychauhann.onrender.com/api/gpt5", {
+      params: { 
+        prompt: prompt,
+        uid: "",
+        reset: ""
+      }
+    });
 
-      const responseText = data.response || "❌ No response received from ChatGPT-4.";
-
-      // Get user's name for better UX
-      api.getUserInfo(senderID, (err, infoUser) => {
-        const userName = infoUser?.[senderID]?.name || "Unknown User";
-        const timePH = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
-        const replyMessage = `🤖 𝗩-𝗔𝗦𝗦𝗜𝗦𝗧𝗔𝗡𝗧\n━━━━━━━━━━━━━━━━━━\n${responseText}\n━━━━━━━━━━━━━━━━━━\n🗣 𝗔𝘀𝗸𝗲𝗱 𝗯𝘆: ${userName}\n⏰ 𝗧𝗶𝗺𝗲: ${timePH}`;
-
-        api.editMessage(replyMessage, info.messageID);
-      });
-
-    } catch (error) {
-      console.error("ChatGPT API Error:", error);
-      const errMsg = "❌ Error: " + (error.response?.data?.message || error.message || "Unknown error occurred.");
-      api.editMessage(errMsg, info.messageID);
+    let responseData = res.data;
+    
+    // Parse the response if it's a JSON string
+    if (typeof responseData === 'string') {
+      try {
+        responseData = JSON.parse(responseData);
+      } catch (parseError) {
+        console.error("[ai.js] JSON Parse Error:", parseError);
+      }
     }
-  });
+
+    // Extract the actual response text
+    const answer = responseData?.response || responseData?.answer || responseData?.data || responseData?.message || responseData;
+
+    if (!answer || answer.trim() === "") {
+      // Delete waiting message and send error
+      api.unsendMessage(waitingMessage.messageID);
+      return api.sendMessage(
+        "⚠️ No response received from AI. Try again later.",
+        threadID,
+        messageID
+      );
+    }
+
+    // Delete the waiting message
+    api.unsendMessage(waitingMessage.messageID);
+
+    // Split long messages if they exceed Facebook's limit (~2000 characters)
+    const messageParts = [];
+    const maxLength = 2000;
+    
+    if (answer.length > maxLength) {
+      // Split the answer into chunks
+      for (let i = 0; i < answer.length; i += maxLength) {
+        const chunk = answer.substring(i, i + maxLength);
+        if (i === 0) {
+          messageParts.push(`🤖 𝗔𝗜 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲:\n\n${chunk}`);
+        } else {
+          messageParts.push(chunk);
+        }
+      }
+    } else {
+      messageParts.push(`🤖 𝗔𝗜 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲:\n\n${answer}`);
+    }
+
+    // Send all message parts
+    for (const part of messageParts) {
+      await api.sendMessage(part, threadID);
+    }
+
+  } catch (err) {
+    console.error("[ai.js] API Error:", err.response?.data || err.message);
+    
+    // Delete waiting message and send error
+    api.unsendMessage(waitingMessage.messageID);
+    return api.sendMessage(
+      "🚫 Failed to reach AI API. Please try again later.",
+      threadID,
+      messageID
+    );
+  }
 };

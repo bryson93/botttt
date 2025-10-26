@@ -36,40 +36,27 @@ module.exports.handleEvent = async function ({ api, event }) {
     );
 
     if (isBotAdded) {
-        // Bot joining group message
-        const botMessage = `
-✦┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈✦
-          🤖 BOT JOINED 🤖
-✦┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈✦
+        // Bot joining group - Messenger bot style
+        const botMessage = `🤖 Bot Activated
 
-🎯 AUTOBOT joined: ${groupName}
+Hello! I'm now active in "${groupName}"
 
-👑 Owner: Bryson 
-💡 Type: help for commands
-
-✅ System running normally.
-✦┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈✦
-        `;
+Commands: type "help"
+Owner: Bryson
+Status: ✅ Online`;
         
         await api.sendMessage({
             body: botMessage
         }, event.threadID);
     } else {
-        // User joining group message
+        // User joining group - Messenger notification style
         const userName = names.join(", ");
-        const welcomeMessage = `
-✦┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈✦
-        🎉 WELCOME 🎉
-✦┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈✦
+        const welcomeMessage = `👋 ${userName} joined the group
 
-👋 Welcome ${userName}
-📌 to ${groupName}
+Group: ${groupName}
+Total members: ${memberCount}
 
-👥 Members: ${memberCount}
-
-🟢 Status: Active
-✦┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈✦
-        `;
+Welcome! 🎉`;
         
         await api.sendMessage({
             body: welcomeMessage

@@ -57,12 +57,17 @@ module.exports.run = async function ({ api, event, args }) {
     const answer = responseData?.result || responseData?.response || responseData?.answer || responseData?.data || responseData?.message || responseData;
 
     if (!answer || answer.trim() === "") {
-      // Edit waiting message to show error
-      return api.editMessage(
+      // Delete waiting message and send error
+      api.unsendMessage(waitingMessage.messageID);
+      return api.sendMessage(
         "⚠️ 𝗘𝗿𝗿𝗼𝗿 𝗢𝗰𝗰𝘂𝗿𝗿𝗲𝗱\n━━━━━━━━━━━━━━━━━━\n❌ No response received from AI.\n🔧 Please try again later or rephrase your question.\n━━━━━━━━━━━━━━━━━━\n💫 Still here to help!",
-        waitingMessage.messageID
+        threadID,
+        messageID
       );
     }
+
+    // Delete the waiting message
+    api.unsendMessage(waitingMessage.messageID);
 
     // Create beautiful response design
     const createResponseBox = (text, isFirst = true) => {
@@ -90,16 +95,20 @@ module.exports.run = async function ({ api, event, args }) {
       messageParts.push(createResponseBox(answer, true));
     }
 
-    // Edit the waiting message with the first part of response
-    await api.editMessage(messageParts[0], waitingMessage.messageID);
+    // Send all message parts
+    for (const part of messageParts) {
+      await api.sendMessage(part, threadID);
+    }
 
   } catch (err) {
     console.error("[ai.js] API Error:", err.message);
     
-    // Edit waiting message to show error
-    return api.editMessage(
+    // Delete waiting message and send error
+    api.unsendMessage(waitingMessage.messageID);
+    return api.sendMessage(
       "⚠️ 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗨𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n━━━━━━━━━━━━━━━━━━\n❌ Failed to reach AI API.\n🔧 Please try again later.\n━━━━━━━━━━━━━━━━━━\n✨ Still here to help!",
-      waitingMessage.messageID
+      threadID,
+      messageID
     );
   }
 };

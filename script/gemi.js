@@ -10,7 +10,7 @@ module.exports.config = {
   usages: "gemini [question]",
   cooldowns: 5,
   role: 0,
-  hasPrefix: true
+  hasPrefix: false
 };
 
 module.exports.run = async function ({ api, event, args }) {

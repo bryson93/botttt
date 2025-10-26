@@ -4,7 +4,7 @@ module.exports.config = {
   name: "gemini",
   version: "1.0.0",
   hasPermission: 0,
-  credits: "Vern",
+  credits: "bryson",
   description: "Ask the Gemini AI a question and get a thoughtful answer.",
   commandCategory: "ai",
   usages: "gemini [question]",
@@ -26,8 +26,8 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   try {
-    // Fetch from the Gemini API
-    const res = await axios.get("https://urangkapolka.vercel.app/api/gemink", {
+    // Fetch from the new Gemini API
+    const res = await axios.get("https://api-library-kohi.onrender.com/api/gemini", {
       params: { prompt }
     });
 

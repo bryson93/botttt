@@ -26,25 +26,36 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   try {
-    // Fetch from the new Gemini API
+    // Direct URL construction for the new API
     const apiUrl = `https://api-library-kohi.onrender.com/api/gemini?prompt=${encodeURIComponent(prompt)}`;
     
-    console.log("[gemini.js] Making API request to:", apiUrl);
-    
-    const res = await axios.get(apiUrl);
-    
-    console.log("[gemini.js] API Response:", JSON.stringify(res.data, null, 2));
+    const res = await axios.get(apiUrl, {
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
 
-    // Check different possible response structures
-    let answer = res.data?.response || res.data?.answer || res.data?.content || res.data?.message || res.data;
-
-    if (typeof answer === 'object') {
-      answer = JSON.stringify(answer);
+    // Try to extract response from different possible structures
+    let answer;
+    
+    if (typeof res.data === 'string') {
+      answer = res.data;
+    } else if (res.data.response) {
+      answer = res.data.response;
+    } else if (res.data.answer) {
+      answer = res.data.answer;
+    } else if (res.data.content) {
+      answer = res.data.content;
+    } else if (res.data.message) {
+      answer = res.data.message;
+    } else {
+      answer = JSON.stringify(res.data);
     }
 
     if (!answer || answer.trim() === "") {
       return api.sendMessage(
-        "⚠️ No response received from Gemini. Try again later.",
+        "⚠️ No response received from Gemini. The API returned empty content.",
         threadID,
         messageID
       );
@@ -60,9 +71,9 @@ module.exports.run = async function ({ api, event, args }) {
       messageID
     );
   } catch (err) {
-    console.error("[gemini.js] API Error:", err.response?.data || err.message);
+    console.error("[gemini.js] API Error:", err);
     return api.sendMessage(
-      "🚫 Failed to reach Gemini API. Please try again later.",
+      `🚫 Error: ${err.message}`,
       threadID,
       messageID
     );

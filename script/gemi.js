@@ -25,16 +25,19 @@ module.exports.run = async function ({ api, event, args }) {
     );
   }
 
+  // Send waiting message
+  const waitingMessage = await api.sendMessage(
+    "⏳ Gemini is thinking... Please wait a moment.",
+    threadID
+  );
+
   try {
-    // Fetch from the new Gemini API
     const res = await axios.get("https://api-library-kohi.onrender.com/api/gemini", {
       params: { prompt }
     });
 
-    // Parse the response if it's a JSON string
     let responseData = res.data;
     
-    // If the response is a string, try to parse it as JSON
     if (typeof responseData === 'string') {
       try {
         responseData = JSON.parse(responseData);
@@ -43,10 +46,11 @@ module.exports.run = async function ({ api, event, args }) {
       }
     }
 
-    // Extract the actual response text
     const answer = responseData?.data || responseData?.response || responseData;
 
     if (!answer) {
+      // Delete waiting message and send error
+      api.unsendMessage(waitingMessage.messageID);
       return api.sendMessage(
         "⚠️ No response received from Gemini. Try again later.",
         threadID,
@@ -54,17 +58,37 @@ module.exports.run = async function ({ api, event, args }) {
       );
     }
 
-    // Trim if too long
-    const maxLen = 2000;
-    const output = answer.length > maxLen ? answer.slice(0, maxLen) + "..." : answer;
+    // Delete the waiting message
+    api.unsendMessage(waitingMessage.messageID);
 
-    return api.sendMessage(
-      `🤖 𝗚𝗲𝗺𝗶𝗻𝗶 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲:\n\n${output}`,
-      threadID,
-      messageID
-    );
+    // Split long messages if they exceed Facebook's limit (~2000 characters)
+    const messageParts = [];
+    const maxLength = 2000;
+    
+    if (answer.length > maxLength) {
+      // Split the answer into chunks
+      for (let i = 0; i < answer.length; i += maxLength) {
+        const chunk = answer.substring(i, i + maxLength);
+        if (i === 0) {
+          messageParts.push(`🤖 𝗚𝗲𝗺𝗶𝗻𝗶 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲:\n\n${chunk}`);
+        } else {
+          messageParts.push(chunk);
+        }
+      }
+    } else {
+      messageParts.push(`🤖 𝗚𝗲𝗺𝗶𝗻𝗶 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲:\n\n${answer}`);
+    }
+
+    // Send all message parts
+    for (const part of messageParts) {
+      await api.sendMessage(part, threadID);
+    }
+
   } catch (err) {
     console.error("[gemini.js] API Error:", err.response?.data || err.message);
+    
+    // Delete waiting message and send error
+    api.unsendMessage(waitingMessage.messageID);
     return api.sendMessage(
       "🚫 Failed to reach Gemini API. Please try again later.",
       threadID,

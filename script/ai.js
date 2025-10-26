@@ -10,7 +10,7 @@ module.exports.config = {
   usages: "ai [question]",
   cooldowns: 5,
   role: 0,
-  hasPrefix: true
+  hasPrefix: false
 };
 
 module.exports.run = async function ({ api, event, args }) {
@@ -32,10 +32,7 @@ module.exports.run = async function ({ api, event, args }) {
   );
 
   try {
-    // Try different API approaches
     const apiUrl = `https://arychauhann.onrender.com/api/gpt5?prompt=${encodeURIComponent(prompt)}&uid=&reset=`;
-    
-    console.log("[ai.js] Making API request to:", apiUrl);
     
     const res = await axios.get(apiUrl, {
       timeout: 30000,
@@ -45,9 +42,6 @@ module.exports.run = async function ({ api, event, args }) {
       }
     });
 
-    console.log("[ai.js] API Response status:", res.status);
-    console.log("[ai.js] API Response data:", res.data);
-
     let responseData = res.data;
     
     // Parse the response if it's a JSON string
@@ -56,25 +50,16 @@ module.exports.run = async function ({ api, event, args }) {
         responseData = JSON.parse(responseData);
       } catch (parseError) {
         console.error("[ai.js] JSON Parse Error:", parseError);
-        // If it's not JSON, use the string directly
       }
     }
 
-    // Extract the actual response text - try different possible keys
-    let answer = responseData?.response || responseData?.answer || responseData?.data || 
-                 responseData?.message || responseData?.content || responseData?.text || 
-                 responseData;
-
-    // If answer is still an object, stringify it
-    if (typeof answer === 'object' && answer !== null) {
-      answer = JSON.stringify(answer);
-    }
+    // Extract the actual response text from the result field
+    const answer = responseData?.result || responseData?.response || responseData?.answer || responseData?.data || responseData?.message || responseData;
 
     if (!answer || answer.trim() === "") {
-      // Delete waiting message and send error
       api.unsendMessage(waitingMessage.messageID);
       return api.sendMessage(
-        "⚠️ No response received from AI. The API returned empty content.",
+        "⚠️ No response received from AI. Try again later.",
         threadID,
         messageID
       );
@@ -88,7 +73,6 @@ module.exports.run = async function ({ api, event, args }) {
     const maxLength = 2000;
     
     if (answer.length > maxLength) {
-      // Split the answer into chunks
       for (let i = 0; i < answer.length; i += maxLength) {
         const chunk = answer.substring(i, i + maxLength);
         if (i === 0) {
@@ -107,27 +91,13 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
   } catch (err) {
-    console.error("[ai.js] API Error Details:");
-    console.error("Error Message:", err.message);
-    console.error("Error Code:", err.code);
-    console.error("Response Status:", err.response?.status);
-    console.error("Response Data:", err.response?.data);
+    console.error("[ai.js] API Error:", err.message);
     
-    // Delete waiting message and send error
     api.unsendMessage(waitingMessage.messageID);
-    
-    let errorMessage = "🚫 Failed to reach AI API. Please try again later.";
-    
-    if (err.code === 'ECONNREFUSED') {
-      errorMessage = "🚫 Cannot connect to AI API. The server might be down.";
-    } else if (err.code === 'ETIMEDOUT') {
-      errorMessage = "🚫 AI API request timed out. Please try again.";
-    } else if (err.response?.status === 404) {
-      errorMessage = "🚫 AI API endpoint not found. The API might have changed.";
-    } else if (err.response?.status === 500) {
-      errorMessage = "🚫 AI API server error. Please try again later.";
-    }
-    
-    return api.sendMessage(errorMessage, threadID, messageID);
+    return api.sendMessage(
+      "🚫 Failed to reach AI API. Please try again later.",
+      threadID,
+      messageID
+    );
   }
 };

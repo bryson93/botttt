@@ -59,7 +59,7 @@ module.exports.run = async function ({ api, event, args }) {
     if (!answer || answer.trim() === "") {
       // Edit waiting message to show error
       return api.editMessage(
-        "🚫 𝗔𝗜 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗧𝗲𝗺𝗽𝗼𝗿𝗮𝗿𝗶𝗹𝘆 𝗨𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n━━━━━━━━━━━━━━━━━━\nThe AI service is currently not responding.\n\n🔍 𝗣𝗼𝘀𝘀𝗶𝗯𝗹𝗲 𝗿𝗲𝗮𝘀𝗼𝗻𝘀:\n• Server maintenance\n• High traffic\n• Temporary outage\n\n🔄 𝗧𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗶𝗻 𝗮 𝗳𝗲𝘄 𝗺𝗶𝗻𝘂𝘁𝗲𝘀\n━━━━━━━━━━━━━━━━━━\n💫 We'll be back soon!",
+        "⚠️ 𝗘𝗿𝗿𝗼𝗿 𝗢𝗰𝗰𝘂𝗿𝗿𝗲𝗱\n━━━━━━━━━━━━━━━━━━\n❌ No response received from AI.\n🔧 Please try again later or rephrase your question.\n━━━━━━━━━━━━━━━━━━\n💫 Still here to help!",
         waitingMessage.messageID
       );
     }
@@ -114,7 +114,7 @@ module.exports.run = async function ({ api, event, args }) {
     } else if (err.code === 'ETIMEDOUT') {
       errorDesign = "⏰ 𝗥𝗲𝗾𝘂𝗲𝘀𝘁 𝗧𝗶𝗺𝗲𝗱 𝗢𝘂𝘁\n━━━━━━━━━━━━━━━━━━\nThe AI is taking longer than expected to respond.\n\n⚡ 𝗧𝗿𝘆 𝘁𝗵𝗶𝘀:\n• Simplify your question\n• Ask again in 30 seconds\n• Check your connection\n━━━━━━━━━━━━━━━━━━\n🔄 Retrying usually works!";
     } else {
-      errorDesign = "🚫 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗜𝗻𝘁𝗲𝗿𝗿𝘂𝗽𝘁𝗶𝗼𝗻\n━━━━━━━━━━━━━━━━━━\nTemporary issue with AI connectivity.\n\n📋 𝗪𝗵𝗮𝘁'𝘀 𝗵𝗮𝗽𝗽𝗲𝗻𝗶𝗻𝗴:\n• Service temporarily offline\n• Maintenance in progress\n• Will be back soon\n━━━━━━━━━━━━━━━━━━\n💫 Thank you for your patience";
+      errorDesign = "⚠️ 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗨𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n━━━━━━━━━━━━━━━━━━\n❌ Failed to reach AI API.\n🔧 Please try again later.\n📞 Contact admin if issue persists.\n━━━━━━━━━━━━━━━━━━\n✨ Still here to help!";
     }
     
     // Edit waiting message to show error

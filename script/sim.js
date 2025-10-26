@@ -13,7 +13,8 @@ module.exports.config = {
     description: "Simsimi chat mode (command + safe auto-reply)",
     commandCategory: "fun",
     usages: "[message]",
-    cooldowns: 1
+    cooldowns: 1,
+    hasPrefix: false
 };
 
 async function sendSimSimi(api, event, text) {

@@ -19,15 +19,15 @@ module.exports.run = async function ({ api, event, args }) {
 
   if (!prompt) {
     return api.sendMessage(
-      "❓ Please provide a question to ask AI.\n\nUsage: ai What is your name?",
+      "🌟 𝗔𝗜 𝗔𝘀𝘀𝗶𝘀𝘁𝗮𝗻𝘁\n━━━━━━━━━━━━━━━━━━\n❓ Please provide a question to ask AI.\n\n💡 𝗨𝘀𝗮𝗴𝗲: ai What is your name?\n━━━━━━━━━━━━━━━━━━\n✨ Powered by GPT-5",
       threadID,
       messageID
     );
   }
 
-  // Send waiting message
+  // Send waiting message with design
   const waitingMessage = await api.sendMessage(
-    "⏳ AI is thinking... Please wait a moment.",
+    "🕒 𝗣𝗿𝗼𝗰𝗲𝘀𝘀𝗶𝗻𝗴 𝗥𝗲𝗾𝘂𝗲𝘀𝘁\n━━━━━━━━━━━━━━━━━━\n⏳ AI is analyzing your question...\n📝 Please wait a moment while I generate the best response.\n━━━━━━━━━━━━━━━━━━\n✨ Thinking deeply...",
     threadID
   );
 
@@ -57,47 +57,67 @@ module.exports.run = async function ({ api, event, args }) {
     const answer = responseData?.result || responseData?.response || responseData?.answer || responseData?.data || responseData?.message || responseData;
 
     if (!answer || answer.trim() === "") {
-      api.unsendMessage(waitingMessage.messageID);
-      return api.sendMessage(
-        "⚠️ No response received from AI. Try again later.",
-        threadID,
-        messageID
+      // Edit waiting message to show error
+      return api.editMessage(
+        "⚠️ 𝗘𝗿𝗿𝗼𝗿 𝗢𝗰𝗰𝘂𝗿𝗿𝗲𝗱\n━━━━━━━━━━━━━━━━━━\n❌ No response received from AI.\n🔧 Please try again later or rephrase your question.\n━━━━━━━━━━━━━━━━━━\n💫 Still here to help!",
+        waitingMessage.messageID
       );
     }
 
-    // Delete the waiting message
-    api.unsendMessage(waitingMessage.messageID);
+    // Create beautiful response design
+    const createResponseBox = (text, isFirst = true) => {
+      const header = isFirst ? 
+        "🤖 𝗔𝗜 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲\n━━━━━━━━━━━━━━━━━━\n" : 
+        "↳ 𝗖𝗼𝗻𝘁𝗶𝗻𝘂𝗲𝗱\n━━━━━━━━━━━━━━━━━━\n";
+      
+      const footer = isFirst ? 
+        "\n━━━━━━━━━━━━━━━━━━\n💡 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆 𝗚𝗣𝗧-5 | ✨ 𝗕𝘆 𝗕𝗿𝘆𝘀𝗼𝗻" : 
+        "\n━━━━━━━━━━━━━━━━━━";
+      
+      return `${header}${text}${footer}`;
+    };
 
     // Split long messages if they exceed Facebook's limit (~2000 characters)
     const messageParts = [];
-    const maxLength = 2000;
+    const maxLength = 1800; // Reduced to account for design elements
     
     if (answer.length > maxLength) {
       for (let i = 0; i < answer.length; i += maxLength) {
         const chunk = answer.substring(i, i + maxLength);
-        if (i === 0) {
-          messageParts.push(`🤖 𝗔𝗜 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲:\n\n${chunk}`);
-        } else {
-          messageParts.push(chunk);
-        }
+        messageParts.push(createResponseBox(chunk, i === 0));
       }
     } else {
-      messageParts.push(`🤖 𝗔𝗜 𝗥𝗲𝘀𝗽𝗼𝗻𝘀𝗲:\n\n${answer}`);
+      messageParts.push(createResponseBox(answer, true));
     }
 
-    // Send all message parts
-    for (const part of messageParts) {
-      await api.sendMessage(part, threadID);
+    // Edit the waiting message with the first part of response
+    await api.editMessage(messageParts[0], waitingMessage.messageID);
+
+    // Send additional parts as new messages if needed
+    if (messageParts.length > 1) {
+      for (let i = 1; i < messageParts.length; i++) {
+        await api.sendMessage(messageParts[i], threadID);
+        // Add small delay between messages for better UX
+        if (i < messageParts.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
     }
 
   } catch (err) {
     console.error("[ai.js] API Error:", err.message);
     
-    api.unsendMessage(waitingMessage.messageID);
-    return api.sendMessage(
-      "🚫 Failed to reach AI API. Please try again later.",
-      threadID,
-      messageID
-    );
+    let errorDesign = "";
+    
+    if (err.code === 'ECONNREFUSED') {
+      errorDesign = "🌐 𝗖𝗼𝗻𝗻𝗲𝗰𝘁𝗶𝗼𝗻 𝗘𝗿𝗿𝗼𝗿\n━━━━━━━━━━━━━━━━━━\n❌ Cannot connect to AI service.\n🔧 The server might be temporarily down.\n━━━━━━━━━━━━━━━━━━\n🔄 Please try again in a few moments.";
+    } else if (err.code === 'ETIMEDOUT') {
+      errorDesign = "⏰ 𝗧𝗶𝗺𝗲𝗼𝘂𝘁 𝗘𝗿𝗿𝗼𝗿\n━━━━━━━━━━━━━━━━━━\n⏳ Request took too long to process.\n💭 The AI might be thinking too deeply!\n━━━━━━━━━━━━━━━━━━\n🔄 Please try your question again.";
+    } else {
+      errorDesign = "⚠️ 𝗦𝗲𝗿𝘃𝗶𝗰𝗲 𝗨𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n━━━━━━━━━━━━━━━━━━\n❌ Failed to reach AI API.\n🔧 Please try again later.\n📞 Contact admin if issue persists.\n━━━━━━━━━━━━━━━━━━\n✨ Still here to help!";
+    }
+    
+    // Edit waiting message to show error
+    return api.editMessage(errorDesign, waitingMessage.messageID);
   }
 };

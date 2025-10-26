@@ -10,7 +10,7 @@ module.exports.config = {
   usages: "gemini [question]",
   cooldowns: 5,
   role: 0,
-  hasPrefix: false
+  hasPrefix: true
 };
 
 module.exports.run = async function ({ api, event, args }) {
@@ -57,12 +57,17 @@ module.exports.run = async function ({ api, event, args }) {
     const answer = responseData?.response || responseData?.answer || responseData?.data || responseData?.message || responseData?.result || responseData;
 
     if (!answer || answer.trim() === "") {
-      // Edit waiting message to show error
-      return api.editMessage(
+      // Delete waiting message and send error
+      api.unsendMessage(waitingMessage.messageID);
+      return api.sendMessage(
         "⚠️ 𝗦𝗘𝗥𝗩𝗜𝗖𝗘 𝗨𝗡𝗔𝗩𝗔𝗜𝗟𝗔𝗕𝗟𝗘\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n\n🔧 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜 𝗶𝘀 𝘁𝗲𝗺𝗽𝗼𝗿𝗮𝗿𝗶𝗹𝘆 𝘂𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n\n🔄 𝗧𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗶𝗻 𝗮 𝗳𝗲𝘄 𝗺𝗶𝗻𝘂𝘁𝗲𝘀\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n💫 𝗪𝗲'𝗹𝗹 𝗯𝗲 𝗯𝗮𝗰𝗸 𝘀𝗼𝗼𝗻",
-        waitingMessage.messageID
+        threadID,
+        messageID
       );
     }
+
+    // Delete the waiting message
+    api.unsendMessage(waitingMessage.messageID);
 
     // Create beautiful response design
     const createResponseBox = (text, isFirst = true) => {
@@ -90,34 +95,20 @@ module.exports.run = async function ({ api, event, args }) {
       messageParts.push(createResponseBox(answer, true));
     }
 
-    // Edit the waiting message with the first part of response
-    await api.editMessage(messageParts[0], waitingMessage.messageID);
-
-    // Send additional parts as new messages if needed
-    if (messageParts.length > 1) {
-      for (let i = 1; i < messageParts.length; i++) {
-        await api.sendMessage(messageParts[i], threadID);
-        // Add small delay between messages for better UX
-        if (i < messageParts.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
+    // Send all message parts
+    for (const part of messageParts) {
+      await api.sendMessage(part, threadID);
     }
 
   } catch (err) {
     console.error("[gemi.js] API Error:", err.message);
     
-    let errorDesign = "";
-    
-    if (err.code === 'ECONNREFUSED') {
-      errorDesign = "🌐 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗜𝗢𝗡 𝗙𝗔𝗜𝗟𝗘𝗗\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n\n🚫 𝗖𝗮𝗻𝗻𝗼𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁 𝘁𝗼 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜\n\n📡 𝗣𝗹𝗲𝗮𝘀𝗲 𝗰𝗵𝗲𝗰𝗸 𝘆𝗼𝘂𝗿 𝗶𝗻𝘁𝗲𝗿𝗻𝗲𝘁 𝗰𝗼𝗻𝗻𝗲𝗰𝘁𝗶𝗼𝗻\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n🔄 𝗧𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝘀𝗼𝗼𝗻";
-    } else if (err.code === 'ETIMEDOUT') {
-      errorDesign = "⏰ 𝗧𝗜𝗠𝗘𝗢𝗨𝗧 𝗘𝗥𝗥𝗢𝗥\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n\n⏳ 𝗥𝗲𝗾𝘂𝗲𝘀𝘁 𝘁𝗼𝗼𝗸 𝘁𝗼𝗼 𝗹𝗼𝗻𝗴\n\n💡 𝗧𝗿𝘆 𝘀𝗶𝗺𝗽𝗹𝗶𝗳𝘆𝗶𝗻𝗴 𝘆𝗼𝘂𝗿 𝗾𝘂𝗲𝘀𝘁𝗶𝗼𝗻\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n⚡ 𝗥𝗲𝘁𝗿𝘆 𝗶𝗻 𝟯𝟬 𝘀𝗲𝗰𝗼𝗻𝗱𝘀";
-    } else {
-      errorDesign = "🚫 𝗦𝗘𝗥𝗩𝗜𝗖𝗘 𝗘𝗥𝗥𝗢𝗥\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n\n❌ 𝗧𝗲𝗺𝗽𝗼𝗿𝗮𝗿𝘆 𝘀𝗲𝗿𝘃𝗶𝗰𝗲 𝗶𝘀𝘀𝘂𝗲\n\n🛠️ 𝗠𝗮𝗶𝗻𝘁𝗲𝗻𝗮𝗻𝗰𝗲 𝗶𝗻 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n✨ 𝗧𝗵𝗮𝗻𝗸 𝘆𝗼𝘂 𝗳𝗼𝗿 𝘆𝗼𝘂𝗿 𝗽𝗮𝘁𝗶𝗲𝗻𝗰𝗲";
-    }
-    
-    // Edit waiting message to show error
-    return api.editMessage(errorDesign, waitingMessage.messageID);
+    // Delete waiting message and send error
+    api.unsendMessage(waitingMessage.messageID);
+    return api.sendMessage(
+      "⚠️ 𝗦𝗘𝗥𝗩𝗜𝗖𝗘 𝗨𝗡𝗔𝗩𝗔𝗜𝗟𝗔𝗕𝗟𝗘\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n\n🔧 𝗚𝗲𝗺𝗶𝗻𝗶 𝗔𝗜 𝗶𝘀 𝘁𝗲𝗺𝗽𝗼𝗿𝗮𝗿𝗶𝗹𝘆 𝘂𝗻𝗮𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲\n\n🔄 𝗧𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗶𝗻 𝗮 𝗳𝗲𝘄 𝗺𝗶𝗻𝘂𝘁𝗲𝘀\n\n▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n💫 𝗪𝗲'𝗹𝗹 𝗯𝗲 𝗯𝗮𝗰𝗸 𝘀𝗼𝗼𝗻",
+      threadID,
+      messageID
+    );
   }
 };

@@ -26,36 +26,29 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   try {
-    // Direct URL construction for the new API
-    const apiUrl = `https://api-library-kohi.onrender.com/api/gemini?prompt=${encodeURIComponent(prompt)}`;
-    
-    const res = await axios.get(apiUrl, {
-      timeout: 30000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+    // Fetch from the new Gemini API
+    const res = await axios.get("https://api-library-kohi.onrender.com/api/gemini", {
+      params: { prompt }
     });
 
-    // Try to extract response from different possible structures
-    let answer;
+    // Parse the response if it's a JSON string
+    let responseData = res.data;
     
-    if (typeof res.data === 'string') {
-      answer = res.data;
-    } else if (res.data.response) {
-      answer = res.data.response;
-    } else if (res.data.answer) {
-      answer = res.data.answer;
-    } else if (res.data.content) {
-      answer = res.data.content;
-    } else if (res.data.message) {
-      answer = res.data.message;
-    } else {
-      answer = JSON.stringify(res.data);
+    // If the response is a string, try to parse it as JSON
+    if (typeof responseData === 'string') {
+      try {
+        responseData = JSON.parse(responseData);
+      } catch (parseError) {
+        console.error("[gemini.js] JSON Parse Error:", parseError);
+      }
     }
 
-    if (!answer || answer.trim() === "") {
+    // Extract the actual response text
+    const answer = responseData?.data || responseData?.response || responseData;
+
+    if (!answer) {
       return api.sendMessage(
-        "⚠️ No response received from Gemini. The API returned empty content.",
+        "⚠️ No response received from Gemini. Try again later.",
         threadID,
         messageID
       );
@@ -71,9 +64,9 @@ module.exports.run = async function ({ api, event, args }) {
       messageID
     );
   } catch (err) {
-    console.error("[gemini.js] API Error:", err);
+    console.error("[gemini.js] API Error:", err.response?.data || err.message);
     return api.sendMessage(
-      `🚫 Error: ${err.message}`,
+      "🚫 Failed to reach Gemini API. Please try again later.",
       threadID,
       messageID
     );

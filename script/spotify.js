@@ -24,7 +24,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const keyword = encodeURIComponent(args.join(" "));
-  const searchURL = `https://api.nekolabs.web.id/downloader/spotify/play/v1?q=${keyword}`;
+  const searchURL = `https://arychauhann.onrender.com/api/spotifyplay?query=${keyword}`;
 
   await api.sendMessage("🎵 Searching for song...", threadID, messageID);
 
@@ -47,9 +47,9 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
     const title = track.title || track.name || "Unknown Title";
-    const artist = track.artist || track.artists || "Unknown Artist";
-    const audioUrl = track.audio || track.url || track.downloadUrl;
-    const thumbnail = track.thumbnail || track.cover || track.image;
+    const artist = track.artist || track.artists || track.singer || "Unknown Artist";
+    const audioUrl = track.audio || track.url || track.downloadUrl || track.audioUrl;
+    const thumbnail = track.thumbnail || track.cover || track.image || track.artwork;
 
     if (!audioUrl) {
       return api.sendMessage("❌ No audio URL found in the response.", threadID, messageID);
@@ -61,7 +61,10 @@ module.exports.run = async function ({ api, event, args }) {
     // Download thumbnail if available
     if (thumbnail) {
       try {
-        const imgRes = await axios.get(thumbnail, { responseType: "arraybuffer" });
+        const imgRes = await axios.get(thumbnail, { 
+          responseType: "arraybuffer",
+          timeout: 15000 
+        });
         fs.writeFileSync(imgPath, imgRes.data);
       } catch (imgError) {
         console.error("Thumbnail download error:", imgError);
@@ -71,7 +74,10 @@ module.exports.run = async function ({ api, event, args }) {
     // Download audio
     const audioRes = await axios.get(audioUrl, { 
       responseType: "arraybuffer",
-      timeout: 60000
+      timeout: 60000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
     });
     fs.writeFileSync(audioPath, audioRes.data);
 

@@ -29,6 +29,8 @@ module.exports.run = async function ({ api, event, args }) {
   await api.sendMessage("🎵 Searching for song...", threadID, messageID);
 
   try {
+    console.log(`🔍 Searching: ${searchURL}`);
+    
     const searchRes = await axios.get(searchURL, {
       timeout: 30000,
       headers: {
@@ -37,22 +39,51 @@ module.exports.run = async function ({ api, event, args }) {
     });
 
     const data = searchRes.data;
-    
-    // Extract track information from the new API response
-    const track = data.data || data.result || data;
-    
-    if (!track || !track.audio) {
-      console.log("API Response:", JSON.stringify(data, null, 2));
-      return api.sendMessage("❌ No Spotify track found or invalid API response.", threadID, messageID);
+    console.log("📦 Full API Response:", JSON.stringify(data, null, 2));
+
+    // Check if response has data
+    if (!data) {
+      return api.sendMessage("❌ Empty response from API.", threadID, messageID);
     }
 
-    const title = track.title || track.name || "Unknown Title";
-    const artist = track.artist || track.artists || track.singer || "Unknown Artist";
-    const audioUrl = track.audio || track.url || track.downloadUrl || track.audioUrl;
-    const thumbnail = track.thumbnail || track.cover || track.image || track.artwork;
+    // Try different response structures
+    let track = null;
+    let audioUrl = null;
+    let title = "Unknown Title";
+    let artist = "Unknown Artist";
+    let thumbnail = null;
+
+    // Check various response structures
+    if (data.data && typeof data.data === 'object') {
+      track = data.data;
+    } else if (data.result && typeof data.result === 'object') {
+      track = data.result;
+    } else if (Array.isArray(data) && data.length > 0) {
+      track = data[0]; // Take first result if array
+    } else if (typeof data === 'object') {
+      track = data; // Use direct object
+    }
+
+    if (track) {
+      // Extract audio URL from various possible fields
+      audioUrl = track.audio || track.url || track.downloadUrl || track.audioUrl || track.link || track.source;
+      
+      // Extract title
+      title = track.title || track.name || track.song || track.track || "Unknown Title";
+      
+      // Extract artist
+      artist = track.artist || track.artists || track.singer || track.creator || track.author || "Unknown Artist";
+      
+      // Extract thumbnail
+      thumbnail = track.thumbnail || track.cover || track.image || track.artwork || track.poster;
+    }
+
+    console.log(`🎵 Found: ${title} by ${artist}`);
+    console.log(`🔗 Audio URL: ${audioUrl}`);
+    console.log(`🖼️ Thumbnail: ${thumbnail}`);
 
     if (!audioUrl) {
-      return api.sendMessage("❌ No audio URL found in the response.", threadID, messageID);
+      return api.sendMessage("❌ No audio URL found in the API response.", threadID, messageID);
     }
 
     const imgPath = path.join(__dirname, "cache", `thumb_${senderID}.jpg`);
@@ -66,20 +97,26 @@ module.exports.run = async function ({ api, event, args }) {
           timeout: 15000 
         });
         fs.writeFileSync(imgPath, imgRes.data);
+        console.log("✅ Thumbnail downloaded");
       } catch (imgError) {
-        console.error("Thumbnail download error:", imgError);
+        console.error("❌ Thumbnail download error:", imgError.message);
       }
     }
 
     // Download audio
+    console.log("📥 Downloading audio...");
     const audioRes = await axios.get(audioUrl, { 
       responseType: "arraybuffer",
       timeout: 60000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'audio/mpeg,audio/*',
+        'Referer': 'https://open.spotify.com/'
       }
     });
+    
     fs.writeFileSync(audioPath, audioRes.data);
+    console.log("✅ Audio downloaded");
 
     // Send the track
     if (fs.existsSync(imgPath)) {
@@ -118,7 +155,7 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
   } catch (error) {
-    console.error("Spotify command error:", error.response?.data || error.message);
+    console.error("❌ Spotify command error:", error.response?.data || error.message);
     
     let errorMessage = "❌ An error occurred while processing your request.";
     
@@ -128,6 +165,8 @@ module.exports.run = async function ({ api, event, args }) {
       errorMessage = "❌ Request timed out. Please try again.";
     } else if (error.response?.status === 404) {
       errorMessage = "❌ Song not found. Please try a different search term.";
+    } else if (error.response?.data) {
+      errorMessage = `❌ API Error: ${JSON.stringify(error.response.data)}`;
     }
     
     return api.sendMessage(errorMessage, threadID, messageID);

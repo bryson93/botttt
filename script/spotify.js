@@ -10,7 +10,7 @@ module.exports.config = {
   aliases: [],
   description: "Search and download Spotify track.",
   usage: "spotify [song name]",
-  credits: "Vern",
+  credits: "bryson",
   cooldown: 5,
 };
 
@@ -20,54 +20,110 @@ module.exports.run = async function ({ api, event, args }) {
   const senderID = event.senderID;
 
   if (!args[0]) {
-    return api.sendMessage("❌ Please provide a search keyword.\n\nUsage: spotify [song name]", threadID, messageID);
+    return api.sendMessage("❌ Please provide a song name.\n\nUsage: spotify [song name]", threadID, messageID);
   }
 
   const keyword = encodeURIComponent(args.join(" "));
-  const searchURL = `https://kaiz-apis.gleeze.com/api/spotify-search?q=${keyword}&apikey=8aa2f0a0-cbb9-40b8-a7d8-bba320cb9b10`;
+  const searchURL = `https://api.nekolabs.web.id/downloader/spotify/play/v1?q=${keyword}`;
 
-  await api.sendMessage("Traacking song please wait...", threadID, messageID);
+  await api.sendMessage("🎵 Searching for song...", threadID, messageID);
 
   try {
-    const searchRes = await axios.get(searchURL);
-    const track = searchRes.data[0]; // First result
+    const searchRes = await axios.get(searchURL, {
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
 
-    if (!track || !track.trackUrl) {
-      return api.sendMessage("❌ No Spotify track found.", threadID, messageID);
+    const data = searchRes.data;
+    
+    // Extract track information from the new API response
+    const track = data.data || data.result || data;
+    
+    if (!track || !track.audio) {
+      console.log("API Response:", JSON.stringify(data, null, 2));
+      return api.sendMessage("❌ No Spotify track found or invalid API response.", threadID, messageID);
     }
 
-    const downloadURL = `https://kaiz-apis.gleeze.com/api/spotify-down?url=${encodeURIComponent(track.trackUrl)}&apikey=8aa2f0a0-cbb9-40b8-a7d8-bba320cb9b10`;
-    const dlRes = await axios.get(downloadURL);
-    const { title, url, artist, thumbnail } = dlRes.data;
+    const title = track.title || track.name || "Unknown Title";
+    const artist = track.artist || track.artists || "Unknown Artist";
+    const audioUrl = track.audio || track.url || track.downloadUrl;
+    const thumbnail = track.thumbnail || track.cover || track.image;
+
+    if (!audioUrl) {
+      return api.sendMessage("❌ No audio URL found in the response.", threadID, messageID);
+    }
 
     const imgPath = path.join(__dirname, "cache", `thumb_${senderID}.jpg`);
     const audioPath = path.join(__dirname, "cache", `audio_${senderID}.mp3`);
 
-    // Download thumbnail
-    const imgRes = await axios.get(thumbnail, { responseType: "arraybuffer" });
-    fs.writeFileSync(imgPath, imgRes.data);
+    // Download thumbnail if available
+    if (thumbnail) {
+      try {
+        const imgRes = await axios.get(thumbnail, { responseType: "arraybuffer" });
+        fs.writeFileSync(imgPath, imgRes.data);
+      } catch (imgError) {
+        console.error("Thumbnail download error:", imgError);
+      }
+    }
 
     // Download audio
-    const audioRes = await axios.get(url, { responseType: "arraybuffer" });
+    const audioRes = await axios.get(audioUrl, { 
+      responseType: "arraybuffer",
+      timeout: 60000
+    });
     fs.writeFileSync(audioPath, audioRes.data);
 
-    // Send image with details
-    api.sendMessage({
-      body: `🎵 Title: ${title}\n👤 Artist: ${artist}`,
-      attachment: fs.createReadStream(imgPath)
-    }, threadID, () => {
-      // Then send the audio
+    // Send the track
+    if (fs.existsSync(imgPath)) {
+      // Send image with details first
       api.sendMessage({
-        body: "🎧 Here’s your Spotify track!",
+        body: `🎵 ${title}\n👤 ${artist}`,
+        attachment: fs.createReadStream(imgPath)
+      }, threadID, () => {
+        // Then send the audio
+        api.sendMessage({
+          body: "🎧 Here's your Spotify track!",
+          attachment: fs.createReadStream(audioPath)
+        }, threadID, () => {
+          // Cleanup files
+          try {
+            if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+          } catch (e) {
+            console.error("Cleanup error:", e);
+          }
+        });
+      });
+    } else {
+      // Send only audio if no thumbnail
+      api.sendMessage({
+        body: `🎵 ${title}\n👤 ${artist}\n\n🎧 Here's your Spotify track!`,
         attachment: fs.createReadStream(audioPath)
       }, threadID, () => {
-        fs.unlinkSync(imgPath);
-        fs.unlinkSync(audioPath);
+        // Cleanup audio file
+        try {
+          if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+        } catch (e) {
+          console.error("Cleanup error:", e);
+        }
       });
-    });
+    }
 
   } catch (error) {
-    console.error("Spotify command error:", error);
-    return api.sendMessage("❌ An error occurred while processing your request.", threadID, messageID);
+    console.error("Spotify command error:", error.response?.data || error.message);
+    
+    let errorMessage = "❌ An error occurred while processing your request.";
+    
+    if (error.code === 'ECONNREFUSED') {
+      errorMessage = "❌ API server is down. Please try again later.";
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = "❌ Request timed out. Please try again.";
+    } else if (error.response?.status === 404) {
+      errorMessage = "❌ Song not found. Please try a different search term.";
+    }
+    
+    return api.sendMessage(errorMessage, threadID, messageID);
   }
 };

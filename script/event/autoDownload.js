@@ -46,43 +46,28 @@ module.exports.handleEvent = async function ({ api, event }) {
     const res = await axios.get(endpoint);
     const data = res.data;
 
-    // Extract video URL based on platform
-    let videoUrl;
+    console.log("API Response:", JSON.stringify(data, null, 2));
 
-    switch (platforms[matched]) {
-      case "twitter":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "pinterest":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "capcut":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "youtube":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "reddit":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "snapchat":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "facebook":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "tiktok":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      case "instagram":
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
-        break;
-      default:
-        videoUrl = data.videoUrl || data.url || data.downloadUrl;
+    // Try multiple possible field names for video URL
+    let videoUrl = data.videoUrl || data.url || data.downloadUrl || 
+                   data.video_url || data.download_url || data.mediaUrl ||
+                   data.media_url || data.hd || data.sd || data.mp4 ||
+                   data.result?.videoUrl || data.result?.url ||
+                   data.data?.videoUrl || data.data?.url;
+
+    // If videoUrl is still not found, check if the response itself is a URL
+    if (!videoUrl && typeof data === 'string' && data.startsWith('http')) {
+      videoUrl = data;
+    }
+
+    // If videoUrl is an object, try to extract from it
+    if (videoUrl && typeof videoUrl === 'object') {
+      videoUrl = videoUrl.url || videoUrl.videoUrl || videoUrl.downloadUrl;
     }
 
     if (!videoUrl) {
-      return api.sendMessage("❌ Failed to retrieve video URL from the API response.", event.threadID, event.messageID);
+      console.log("Available data fields:", Object.keys(data));
+      return api.sendMessage("❌ Could not find video URL in API response. The API might have changed.", event.threadID, event.messageID);
     }
 
     api.sendMessage("📥 Downloading video...", event.threadID, (err, info) => {
@@ -92,10 +77,12 @@ module.exports.handleEvent = async function ({ api, event }) {
     const fileName = `${Date.now()}.mp4`;
     const filePath = __dirname + "/" + fileName;
 
+    // Download the video
     const videoStream = await axios({
       method: "GET",
       url: videoUrl,
-      responseType: "stream"
+      responseType: "stream",
+      timeout: 60000
     }).then(res => res.data);
 
     const file = fs.createWriteStream(filePath);
@@ -106,20 +93,41 @@ module.exports.handleEvent = async function ({ api, event }) {
         setTimeout(() => {
           api.setMessageReaction("✅", event.messageID, () => {}, true);
           api.sendMessage({
-            body: `✅ Video downloaded successfully from ${matched}`,
+            body: `✅ Video downloaded successfully from ${matched}\n\n📹 ${platforms[matched].toUpperCase()} Video`,
             attachment: fs.createReadStream(filePath)
-          }, event.threadID, () => fs.unlinkSync(filePath));
-        }, 5000);
+          }, event.threadID, () => {
+            try {
+              fs.unlinkSync(filePath);
+            } catch (e) {
+              console.error("Error deleting file:", e);
+            }
+          });
+        }, 2000);
       });
     });
 
     file.on("error", (err) => {
-      console.error("File error:", err);
-      api.sendMessage("❌ Error saving video file.", event.threadID, event.messageID);
+      console.error("File download error:", err);
+      api.sendMessage("❌ Error downloading video file.", event.threadID, event.messageID);
     });
 
   } catch (error) {
     console.error("API Error:", error.response?.data || error.message);
-    api.sendMessage("❌ Failed to download video. The API might be down or the URL is invalid.", event.threadID, event.messageID);
+    
+    let errorMessage = "❌ Failed to download video. ";
+    
+    if (error.code === 'ECONNREFUSED') {
+      errorMessage += "API server is down.";
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage += "Request timed out.";
+    } else if (error.response?.status === 404) {
+      errorMessage += "API endpoint not found.";
+    } else if (error.response?.status === 500) {
+      errorMessage += "Server error.";
+    } else {
+      errorMessage += "Please try again later.";
+    }
+    
+    api.sendMessage(errorMessage, event.threadID, event.messageID);
   }
 };

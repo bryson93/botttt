@@ -35,7 +35,7 @@ module.exports.handleEvent = async function ({ api, event }) {
   const matched = Object.keys(platforms).find(key => input.includes(key));
   if (!matched) return;
 
-  const endpoint = `https://arychauhann.onrender.com/api/allinonedownloader?url=${encodeURIComponent(input)}`;
+  const endpoint = `https://api-library-kohi.onrender.com/api/alldl?url=${encodeURIComponent(input)}`;
 
   api.setMessageReaction("⏳", event.messageID, () => {}, true);
   api.sendTypingIndicator(event.threadID, true);
@@ -50,39 +50,50 @@ module.exports.handleEvent = async function ({ api, event }) {
       }
     });
 
-    console.log("📦 Raw API Response:", res.data);
+    console.log("📦 API Response:", JSON.stringify(res.data, null, 2));
 
-    // Deep search for video URL in the response
-    const findVideoUrl = (obj) => {
-      if (typeof obj === 'string' && obj.match(/\.(mp4|mov|avi|mkv|webm)/i)) {
-        return obj;
-      }
-      if (typeof obj === 'string' && obj.startsWith('http')) {
-        return obj;
-      }
-      if (typeof obj === 'object' && obj !== null) {
-        for (let key in obj) {
-          if (typeof obj[key] === 'string' && obj[key].match(/\.(mp4|mov|avi|mkv|webm)/i)) {
-            return obj[key];
-          }
-          if (typeof obj[key] === 'string' && obj[key].startsWith('http')) {
-            const result = findVideoUrl(obj[key]);
-            if (result) return result;
-          }
-          if (typeof obj[key] === 'object') {
-            const result = findVideoUrl(obj[key]);
-            if (result) return result;
-          }
-        }
-      }
-      return null;
-    };
+    const data = res.data;
 
-    let videoUrl = findVideoUrl(res.data);
+    // Extract video URL based on common response structures
+    let videoUrl = data.url || data.videoUrl || data.downloadUrl || 
+                   data.video_url || data.download_url || data.mediaUrl ||
+                   data.media_url || data.hd || data.sd || data.mp4 ||
+                   data.hdQuality || data.sdQuality ||
+                   data.result?.url || data.result?.videoUrl ||
+                   data.data?.url || data.data?.videoUrl ||
+                   data.links?.[0]?.url || data.videos?.[0]?.url;
+
+    // If no direct URL found, try to find in nested structures
+    if (!videoUrl && data.links && Array.isArray(data.links)) {
+      const videoLink = data.links.find(link => 
+        link.quality === 'hd' || link.quality === '720p' || link.quality === '1080p' ||
+        link.type === 'video' || link.url.includes('.mp4')
+      );
+      videoUrl = videoLink?.url;
+    }
+
+    if (!videoUrl && data.videos && Array.isArray(data.videos)) {
+      const video = data.videos.find(v => 
+        v.quality === 'hd' || v.quality === '720p' || v.quality === '1080p' ||
+        v.url.includes('.mp4')
+      );
+      videoUrl = video?.url;
+    }
+
+    // If still no URL, check if response has success data
+    if (!videoUrl && data.success && data.data) {
+      videoUrl = data.data.url || data.data.videoUrl || data.data.downloadUrl;
+    }
 
     if (!videoUrl) {
-      console.log("🔍 No video URL found in:", JSON.stringify(res.data, null, 2));
-      return api.sendMessage(`❌ Could not extract video URL from ${platforms[matched]}. The API might not support this platform.`, event.threadID, event.messageID);
+      console.log("❌ No video URL found in response structure");
+      return api.sendMessage(`❌ Could not extract video URL from ${platforms[matched]}. The API response structure might be different.`, event.threadID, event.messageID);
+    }
+
+    // Ensure the URL is valid
+    if (!videoUrl.startsWith('http')) {
+      console.log("❌ Invalid video URL:", videoUrl);
+      return api.sendMessage("❌ Invalid video URL received from API.", event.threadID, event.messageID);
     }
 
     api.sendMessage(`📥 Downloading ${platforms[matched]} video...`, event.threadID, (err, info) => {
@@ -92,11 +103,18 @@ module.exports.handleEvent = async function ({ api, event }) {
     const fileName = `download_${Date.now()}.mp4`;
     const filePath = __dirname + "/" + fileName;
 
+    console.log(`📹 Downloading video from: ${videoUrl}`);
+
     const response = await axios({
       method: "GET",
       url: videoUrl,
       responseType: "stream",
-      timeout: 60000
+      timeout: 60000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': 'https://www.tiktok.com/',
+        'Origin': 'https://www.tiktok.com'
+      }
     });
 
     const file = fs.createWriteStream(filePath);
@@ -106,7 +124,7 @@ module.exports.handleEvent = async function ({ api, event }) {
       file.close(() => {
         api.setMessageReaction("✅", event.messageID, () => {}, true);
         api.sendMessage({
-          body: `✅ ${platforms[matched]} Video Downloaded\n📹 Successfully saved!`,
+          body: `✅ ${platforms[matched]} Video Downloaded Successfully!\n\n🎬 Platform: ${platforms[matched]}\n📹 Video ready to watch!`,
           attachment: fs.createReadStream(filePath)
         }, event.threadID, () => {
           try {
@@ -124,7 +142,24 @@ module.exports.handleEvent = async function ({ api, event }) {
     });
 
   } catch (error) {
-    console.error("❌ Full Error:", error.message);
-    api.sendMessage(`❌ Failed to download from ${platforms[matched]}. Error: ${error.message}`, event.threadID, event.messageID);
+    console.error("❌ API Error:", error.response?.data || error.message);
+    
+    let errorMessage = `❌ Failed to download from ${platforms[matched]}. `;
+    
+    if (error.code === 'ECONNREFUSED') {
+      errorMessage += "API server is down.";
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage += "Request timed out.";
+    } else if (error.response?.status === 404) {
+      errorMessage += "API endpoint not found.";
+    } else if (error.response?.status === 500) {
+      errorMessage += "Server error.";
+    } else if (error.response?.data) {
+      errorMessage += `API Error: ${JSON.stringify(error.response.data)}`;
+    } else {
+      errorMessage += `Error: ${error.message}`;
+    }
+    
+    api.sendMessage(errorMessage, event.threadID, event.messageID);
   }
 };

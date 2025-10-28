@@ -20,17 +20,18 @@ module.exports.run = async function ({ api, event, args }) {
   const senderID = event.senderID;
 
   if (!args[0]) {
-    return api.sendMessage("❌ Please provide a song name.\n\nUsage: spotify [song name]", threadID, messageID);
+    return api.sendMessage("❌ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚜𝚘𝚗𝚐 𝚗𝚊𝚖𝚎.\n\n𝚄𝚜𝚊𝚐𝚎: 𝚜𝚙𝚘𝚝𝚒𝚏𝚢 [𝚜𝚘𝚗𝚐 𝚗𝚊𝚖𝚎]", threadID, messageID);
   }
 
   const keyword = encodeURIComponent(args.join(" "));
+  const userRequest = args.join(" ");
   
   // First API: Get track info from Spotify
   const spotifyAPI = `https://api.nekolabs.web.id/downloader/spotify/play/v1?q=${keyword}`;
   // Second API: Download audio from YouTube
   const youtubeAPI = `https://api.nekolabs.web.id/downloader/youtube/play/v1?q=${keyword}`;
 
-  const waitingMsg = await api.sendMessage("🎵 Searching for music...", threadID);
+  const waitingMsg = await api.sendMessage("🎵 𝚂𝚎𝚊𝚛𝚌𝚑𝚒𝚗𝚐 𝚏𝚘𝚛 𝚖𝚞𝚜𝚒𝚌...", threadID);
 
   try {
     console.log(`🔍 Step 1: Getting track info from Spotify API: ${spotifyAPI}`);
@@ -48,15 +49,15 @@ module.exports.run = async function ({ api, event, args }) {
 
     if (!spotifyData) {
       api.unsendMessage(waitingMsg.messageID);
-      return api.sendMessage("❌ Empty response from Spotify API.", threadID, messageID);
+      return api.sendMessage("❌ 𝙴𝚖𝚙𝚝𝚢 𝚛𝚎𝚜𝚙𝚘𝚗𝚜𝚎 𝚏𝚛𝚘𝚖 𝚂𝚙𝚘𝚝𝚒𝚏𝚢 𝙰𝙿𝙸.", threadID, messageID);
     }
 
     // Debug: Show all keys in the response
     console.log("🔑 All keys in Spotify response:", Object.keys(spotifyData));
 
     let trackInfo = spotifyData;
-    let title = "Unknown Title";
-    let artist = "Unknown Artist";
+    let title = "𝚄𝚗𝚔𝚗𝚘𝚠𝚗 𝚃𝚒𝚝𝚕𝚎";
+    let artist = "𝚄𝚗𝚔𝚗𝚘𝚠𝚗 𝙰𝚛𝚝𝚒𝚜𝚝";
     let duration = "";
     let thumbnail = null;
 
@@ -108,7 +109,7 @@ module.exports.run = async function ({ api, event, args }) {
     Thumbnail: ${thumbnail}`);
 
     // If we still have unknown values, try to search the response more deeply
-    if (title === "Unknown Title" || artist === "Unknown Artist") {
+    if (title === "𝚄𝚗𝚔𝚗𝚘𝚠𝚗 𝚃𝚒𝚝𝚕𝚎" || artist === "𝚄𝚗𝚔𝚗𝚘𝚠𝚗 𝙰𝚛𝚝𝚒𝚜𝚝") {
       console.log("🔍 Deep searching response for track info...");
       
       // Convert entire response to string and search for patterns
@@ -147,7 +148,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     if (!youtubeData) {
       api.unsendMessage(waitingMsg.messageID);
-      return api.sendMessage("❌ Empty response from YouTube API.", threadID, messageID);
+      return api.sendMessage("❌ 𝙴𝚖𝚙𝚝𝚢 𝚛𝚎𝚜𝚙𝚘𝚗𝚜𝚎 𝚏𝚛𝚘𝚖 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝙰𝙿𝙸.", threadID, messageID);
     }
 
     // Extract audio URL from YouTube API
@@ -184,7 +185,7 @@ module.exports.run = async function ({ api, event, args }) {
 
     if (!audioUrl) {
       api.unsendMessage(waitingMsg.messageID);
-      return api.sendMessage("❌ No audio URL found from YouTube.", threadID, messageID);
+      return api.sendMessage("❌ 𝙽𝚘 𝚊𝚞𝚍𝚒𝚘 𝚄𝚁𝙻 𝚏𝚘𝚞𝚗𝚍 𝚏𝚛𝚘𝚖 𝚈𝚘𝚞𝚃𝚞𝚋𝚎.", threadID, messageID);
     }
 
     const imgPath = path.join(__dirname, "cache", `thumb_${senderID}.jpg`);
@@ -206,7 +207,22 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
     api.unsendMessage(waitingMsg.messageID);
-    await api.sendMessage(`✅ Found: ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n📥 Downloading audio...`, threadID);
+    
+    // Get current time and date
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US', { 
+      hour12: true, 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    const date = now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Updated message format with stylish fonts
+    await api.sendMessage(`🎵 𝗵𝗲𝗿𝗲'𝘀 𝘆𝗼𝘂𝗿 𝗿𝗲𝗾𝘂𝗲𝘀𝘁 𝘀𝗼𝗻𝗴 𝗲𝗻𝗷𝗼𝘆!\n\n📝 𝗿𝗲𝗾𝘂𝗲𝘀𝘁𝗲𝗱 𝘀𝗼𝗻𝗴 𝗯𝘆: ${userRequest}\n⏰ 𝘁𝗶𝗺𝗲: ${time}\n📅 𝗱𝗮𝘁𝗲: ${date}`, threadID);
 
     // Download audio from YouTube
     console.log("📥 Downloading audio from YouTube...");
@@ -223,8 +239,8 @@ module.exports.run = async function ({ api, event, args }) {
     fs.writeFileSync(audioPath, audioRes.data);
     console.log("✅ Audio downloaded successfully");
 
-    // Send the track
-    const messageBody = `🎵 ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n\n🎧 Here's your music!`;
+    // Send the track with updated message format
+    const messageBody = `🎵 ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n\n🎧 𝗛𝗲𝗿𝗲'𝘀 𝘆𝗼𝘂𝗿 𝗺𝘂𝘀𝗶𝗰!`;
 
     if (fs.existsSync(imgPath)) {
       // Send image with details
@@ -264,16 +280,16 @@ module.exports.run = async function ({ api, event, args }) {
     api.unsendMessage(waitingMsg.messageID);
     console.error("❌ Music command error:", error.response?.data || error.message);
     
-    let errorMessage = "❌ An error occurred while processing your request.";
+    let errorMessage = "❌ 𝙰𝚗 𝚎𝚛𝚛𝚘𝚛 𝚘𝚌𝚌𝚞𝚛𝚛𝚎𝚍 𝚠𝚑𝚒𝚕𝚎 𝚙𝚛𝚘𝚌𝚎𝚜𝚜𝚒𝚗𝚐 𝚢𝚘𝚞𝚛 𝚛𝚎𝚚𝚞𝚎𝚜𝚝.";
     
     if (error.code === 'ECONNREFUSED') {
-      errorMessage = "❌ API server is down. Please try again later.";
+      errorMessage = "❌ 𝙰𝙿𝙸 𝚜𝚎𝚛𝚟𝚎𝚛 𝚒𝚜 𝚍𝚘𝚠𝚗. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛.";
     } else if (error.code === 'ETIMEDOUT') {
-      errorMessage = "❌ Request timed out. Please try again.";
+      errorMessage = "❌ 𝚁𝚎𝚚𝚞𝚎𝚜𝚝 𝚝𝚒𝚖𝚎𝚍 𝚘𝚞𝚝. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗.";
     } else if (error.response?.status === 404) {
-      errorMessage = "❌ Song not found. Please try a different search term.";
+      errorMessage = "❌ 𝚂𝚘𝚗𝚐 𝚗𝚘𝚝 𝚏𝚘𝚞𝚗𝚍. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊 𝚍𝚒𝚏𝚏𝚎𝚛𝚎𝚗𝚝 𝚜𝚎𝚊𝚛𝚌𝚑 𝚝𝚎𝚛𝚖.";
     } else if (error.response?.data) {
-      errorMessage = `❌ API Error: ${error.response.data.message || JSON.stringify(error.response.data)}`;
+      errorMessage = `❌ 𝙰𝙿𝙸 𝙴𝚛𝚛𝚘𝚛: ${error.response.data.message || JSON.stringify(error.response.data)}`;
     }
     
     return api.sendMessage(errorMessage, threadID, messageID);

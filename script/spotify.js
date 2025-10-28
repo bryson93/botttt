@@ -39,7 +39,7 @@ module.exports.run = async function ({ api, event, args }) {
     });
 
     const data = searchRes.data;
-    console.log("📦 API Response:", JSON.stringify(data, null, 2));
+    console.log("📦 Full API Response:", JSON.stringify(data, null, 2));
 
     // Check if response has data
     if (!data) {
@@ -47,37 +47,85 @@ module.exports.run = async function ({ api, event, args }) {
       return api.sendMessage("❌ Empty response from API.", threadID, messageID);
     }
 
-    // Extract track information from YouTube API response
-    let track = data.data || data.result || data;
-    
-    if (!track) {
-      api.unsendMessage(waitingMsg.messageID);
-      return api.sendMessage("❌ No music found for your search.", threadID, messageID);
+    // Extract information - try different response structures
+    let title = "Unknown Title";
+    let artist = "Unknown Artist";
+    let duration = "";
+    let thumbnail = null;
+    let audioUrl = null;
+
+    // Method 1: Direct response structure
+    if (data.title) title = data.title;
+    if (data.author) artist = data.author;
+    if (data.channel) artist = data.channel;
+    if (data.duration) duration = data.duration;
+    if (data.thumbnail) thumbnail = data.thumbnail;
+    if (data.url) audioUrl = data.url;
+
+    // Method 2: Nested data structure
+    if (data.data) {
+      const trackData = data.data;
+      if (trackData.title) title = trackData.title;
+      if (trackData.author) artist = trackData.author;
+      if (trackData.channel) artist = trackData.channel;
+      if (trackData.duration) duration = trackData.duration;
+      if (trackData.thumbnail) thumbnail = trackData.thumbnail;
+      if (trackData.url) audioUrl = trackData.url;
     }
 
-    // Extract information from YouTube response
-    const title = track.title || track.videoTitle || track.name || "Unknown Title";
-    const artist = track.channel || track.author || track.artist || track.uploader || "Unknown Artist";
-    const duration = track.duration || track.length || "";
-    const thumbnail = track.thumbnail || track.thumb || track.cover || track.image;
-    
-    // Extract audio URL - YouTube APIs usually provide direct download links
-    let audioUrl = track.audio || track.url || track.downloadUrl || track.audioUrl || 
-                   track.download_link || track.link;
-
-    // If no direct audio URL, check for formats array
-    if (!audioUrl && track.formats && Array.isArray(track.formats)) {
-      // Prefer audio-only formats
-      const audioFormat = track.formats.find(format => 
-        format.mimeType && format.mimeType.includes('audio') ||
-        format.quality === 'audio'
-      );
-      audioUrl = audioFormat?.url;
+    // Method 3: Result structure
+    if (data.result) {
+      const resultData = data.result;
+      if (resultData.title) title = resultData.title;
+      if (resultData.author) artist = resultData.author;
+      if (resultData.channel) artist = resultData.channel;
+      if (resultData.duration) duration = resultData.duration;
+      if (resultData.thumbnail) thumbnail = resultData.thumbnail;
+      if (resultData.url) audioUrl = resultData.url;
     }
 
-    console.log(`🎵 Found: ${title} by ${artist}`);
-    console.log(`⏱️ Duration: ${duration}`);
-    console.log(`🔗 Audio URL: ${audioUrl}`);
+    // Method 4: Check for video info
+    if (data.video) {
+      const videoData = data.video;
+      if (videoData.title) title = videoData.title;
+      if (videoData.author) artist = videoData.author;
+      if (videoData.channel) artist = videoData.channel;
+      if (videoData.duration) duration = videoData.duration;
+      if (videoData.thumbnail) thumbnail = videoData.thumbnail;
+      if (videoData.url) audioUrl = videoData.url;
+    }
+
+    // Method 5: Deep search for audio URL
+    if (!audioUrl) {
+      const findAudioUrl = (obj) => {
+        if (typeof obj === 'string' && (obj.includes('.mp3') || obj.includes('googlevideo.com'))) {
+          return obj;
+        }
+        if (typeof obj === 'object' && obj !== null) {
+          for (let key in obj) {
+            if (key.toLowerCase().includes('url') || key.toLowerCase().includes('audio') || key.toLowerCase().includes('download')) {
+              if (typeof obj[key] === 'string' && obj[key].startsWith('http')) {
+                return obj[key];
+              }
+            }
+            if (typeof obj[key] === 'object') {
+              const result = findAudioUrl(obj[key]);
+              if (result) return result;
+            }
+          }
+        }
+        return null;
+      };
+      
+      audioUrl = findAudioUrl(data);
+    }
+
+    console.log(`🎵 Extracted Info:`);
+    console.log(`   Title: ${title}`);
+    console.log(`   Artist: ${artist}`);
+    console.log(`   Duration: ${duration}`);
+    console.log(`   Thumbnail: ${thumbnail}`);
+    console.log(`   Audio URL: ${audioUrl}`);
 
     if (!audioUrl) {
       api.unsendMessage(waitingMsg.messageID);
@@ -120,6 +168,8 @@ module.exports.run = async function ({ api, event, args }) {
     console.log("✅ Audio downloaded");
 
     // Send the track
+    const messageBody = `🎵 ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n\n🎧 Here's your music!`;
+
     if (fs.existsSync(imgPath)) {
       // Send image with details first
       api.sendMessage({
@@ -141,9 +191,9 @@ module.exports.run = async function ({ api, event, args }) {
         });
       });
     } else {
-      // Send only audio if no thumbnail
+      // Send only audio
       api.sendMessage({
-        body: `🎵 ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n\n🎧 Here's your music!`,
+        body: messageBody,
         attachment: fs.createReadStream(audioPath)
       }, threadID, () => {
         // Cleanup audio file

@@ -8,7 +8,7 @@ module.exports.config = {
   role: 0,
   hasPrefix: false,
   aliases: ["music", "song"],
-  description: "Search and download music from YouTube.",
+  description: "Search and download music using Spotify info and YouTube audio.",
   usage: "spotify [song name]",
   credits: "bryson",
   cooldown: 5,
@@ -24,118 +24,105 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   const keyword = encodeURIComponent(args.join(" "));
-  const searchURL = `https://api.nekolabs.web.id/downloader/youtube/play/v1?q=${keyword}`;
+  
+  // First API: Get track info from Spotify
+  const spotifyAPI = `https://api.nekolabs.web.id/downloader/spotify/play/v1?q=${keyword}`;
+  // Second API: Download audio from YouTube
+  const youtubeAPI = `https://api.nekolabs.web.id/downloader/youtube/play/v1?q=${keyword}`;
 
   const waitingMsg = await api.sendMessage("🎵 Searching for music...", threadID);
 
   try {
-    console.log(`🔍 Searching: ${searchURL}`);
+    console.log(`🔍 Getting track info from: ${spotifyAPI}`);
     
-    const searchRes = await axios.get(searchURL, {
+    // Step 1: Get track information from Spotify API
+    const spotifyRes = await axios.get(spotifyAPI, {
       timeout: 30000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
     });
 
-    const data = searchRes.data;
-    console.log("📦 Full API Response:", JSON.stringify(data, null, 2));
+    const spotifyData = spotifyRes.data;
+    console.log("📦 Spotify API Response:", JSON.stringify(spotifyData, null, 2));
 
-    // Check if response has data
-    if (!data) {
+    if (!spotifyData) {
       api.unsendMessage(waitingMsg.messageID);
-      return api.sendMessage("❌ Empty response from API.", threadID, messageID);
+      return api.sendMessage("❌ Empty response from Spotify API.", threadID, messageID);
     }
 
-    // Extract information - try different response structures
-    let title = "Unknown Title";
-    let artist = "Unknown Artist";
-    let duration = "";
-    let thumbnail = null;
+    // Extract track information from Spotify API
+    let trackInfo = spotifyData.data || spotifyData.result || spotifyData;
+    
+    if (!trackInfo) {
+      api.unsendMessage(waitingMsg.messageID);
+      return api.sendMessage("❌ No music found on Spotify.", threadID, messageID);
+    }
+
+    // Extract information from Spotify response
+    const title = trackInfo.title || trackInfo.name || "Unknown Title";
+    const artist = trackInfo.artist || trackInfo.artists || trackInfo.singer || "Unknown Artist";
+    const duration = trackInfo.duration || trackInfo.length || "";
+    const thumbnail = trackInfo.thumbnail || trackInfo.cover || trackInfo.image;
+
+    console.log(`🎵 Spotify Found: ${title} by ${artist}`);
+    console.log(`⏱️ Duration: ${duration}`);
+
+    // Step 2: Get audio from YouTube API
+    console.log(`🔍 Getting audio from: ${youtubeAPI}`);
+    
+    const youtubeRes = await axios.get(youtubeAPI, {
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    const youtubeData = youtubeRes.data;
+    console.log("📦 YouTube API Response:", JSON.stringify(youtubeData, null, 2));
+
+    if (!youtubeData) {
+      api.unsendMessage(waitingMsg.messageID);
+      return api.sendMessage("❌ Empty response from YouTube API.", threadID, messageID);
+    }
+
+    // Extract audio URL from YouTube API
+    let youtubeTrack = youtubeData.data || youtubeData.result || youtubeData;
     let audioUrl = null;
 
-    // Method 1: Direct response structure
-    if (data.title) title = data.title;
-    if (data.author) artist = data.author;
-    if (data.channel) artist = data.channel;
-    if (data.duration) duration = data.duration;
-    if (data.thumbnail) thumbnail = data.thumbnail;
-    if (data.url) audioUrl = data.url;
+    if (youtubeTrack) {
+      // Try to get audio URL from YouTube response
+      audioUrl = youtubeTrack.audio || youtubeTrack.url || youtubeTrack.downloadUrl || 
+                 youtubeTrack.audioUrl || youtubeTrack.download_link || youtubeTrack.link;
 
-    // Method 2: Nested data structure
-    if (data.data) {
-      const trackData = data.data;
-      if (trackData.title) title = trackData.title;
-      if (trackData.author) artist = trackData.author;
-      if (trackData.channel) artist = trackData.channel;
-      if (trackData.duration) duration = trackData.duration;
-      if (trackData.thumbnail) thumbnail = trackData.thumbnail;
-      if (trackData.url) audioUrl = trackData.url;
-    }
-
-    // Method 3: Result structure
-    if (data.result) {
-      const resultData = data.result;
-      if (resultData.title) title = resultData.title;
-      if (resultData.author) artist = resultData.author;
-      if (resultData.channel) artist = resultData.channel;
-      if (resultData.duration) duration = resultData.duration;
-      if (resultData.thumbnail) thumbnail = resultData.thumbnail;
-      if (resultData.url) audioUrl = resultData.url;
-    }
-
-    // Method 4: Check for video info
-    if (data.video) {
-      const videoData = data.video;
-      if (videoData.title) title = videoData.title;
-      if (videoData.author) artist = videoData.author;
-      if (videoData.channel) artist = videoData.channel;
-      if (videoData.duration) duration = videoData.duration;
-      if (videoData.thumbnail) thumbnail = videoData.thumbnail;
-      if (videoData.url) audioUrl = videoData.url;
-    }
-
-    // Method 5: Deep search for audio URL
-    if (!audioUrl) {
-      const findAudioUrl = (obj) => {
-        if (typeof obj === 'string' && (obj.includes('.mp3') || obj.includes('googlevideo.com'))) {
-          return obj;
+      // If no direct audio URL, check for formats array (common in YouTube APIs)
+      if (!audioUrl && youtubeTrack.formats && Array.isArray(youtubeTrack.formats)) {
+        // Prefer audio-only formats or high quality audio
+        const audioFormat = youtubeTrack.formats.find(format => 
+          (format.mimeType && format.mimeType.includes('audio')) ||
+          format.quality === 'audio' ||
+          (format.hasAudio && !format.hasVideo)
+        );
+        audioUrl = audioFormat?.url;
+        
+        // If still no audio URL, take the first format
+        if (!audioUrl && youtubeTrack.formats.length > 0) {
+          audioUrl = youtubeTrack.formats[0].url;
         }
-        if (typeof obj === 'object' && obj !== null) {
-          for (let key in obj) {
-            if (key.toLowerCase().includes('url') || key.toLowerCase().includes('audio') || key.toLowerCase().includes('download')) {
-              if (typeof obj[key] === 'string' && obj[key].startsWith('http')) {
-                return obj[key];
-              }
-            }
-            if (typeof obj[key] === 'object') {
-              const result = findAudioUrl(obj[key]);
-              if (result) return result;
-            }
-          }
-        }
-        return null;
-      };
-      
-      audioUrl = findAudioUrl(data);
+      }
     }
 
-    console.log(`🎵 Extracted Info:`);
-    console.log(`   Title: ${title}`);
-    console.log(`   Artist: ${artist}`);
-    console.log(`   Duration: ${duration}`);
-    console.log(`   Thumbnail: ${thumbnail}`);
-    console.log(`   Audio URL: ${audioUrl}`);
+    console.log(`🔗 YouTube Audio URL: ${audioUrl}`);
 
     if (!audioUrl) {
       api.unsendMessage(waitingMsg.messageID);
-      return api.sendMessage("❌ No audio URL found in the API response.", threadID, messageID);
+      return api.sendMessage("❌ No audio URL found from YouTube.", threadID, messageID);
     }
 
     const imgPath = path.join(__dirname, "cache", `thumb_${senderID}.jpg`);
     const audioPath = path.join(__dirname, "cache", `audio_${senderID}.mp3`);
 
-    // Download thumbnail if available
+    // Download thumbnail from Spotify if available
     if (thumbnail) {
       try {
         const imgRes = await axios.get(thumbnail, { 
@@ -143,17 +130,17 @@ module.exports.run = async function ({ api, event, args }) {
           timeout: 15000 
         });
         fs.writeFileSync(imgPath, imgRes.data);
-        console.log("✅ Thumbnail downloaded");
+        console.log("✅ Thumbnail downloaded from Spotify");
       } catch (imgError) {
         console.error("❌ Thumbnail download error:", imgError.message);
       }
     }
 
     api.unsendMessage(waitingMsg.messageID);
-    await api.sendMessage(`✅ Found: ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n📥 Downloading...`, threadID);
+    await api.sendMessage(`✅ Found: ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n📥 Downloading audio...`, threadID);
 
-    // Download audio
-    console.log("📥 Downloading audio...");
+    // Download audio from YouTube
+    console.log("📥 Downloading audio from YouTube...");
     const audioRes = await axios.get(audioUrl, { 
       responseType: "arraybuffer",
       timeout: 60000,
@@ -165,7 +152,7 @@ module.exports.run = async function ({ api, event, args }) {
     });
     
     fs.writeFileSync(audioPath, audioRes.data);
-    console.log("✅ Audio downloaded");
+    console.log("✅ Audio downloaded from YouTube");
 
     // Send the track
     const messageBody = `🎵 ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}\n\n🎧 Here's your music!`;
@@ -173,12 +160,11 @@ module.exports.run = async function ({ api, event, args }) {
     if (fs.existsSync(imgPath)) {
       // Send image with details first
       api.sendMessage({
-        body: `🎵 ${title}\n👤 ${artist}${duration ? `\n⏱️ ${duration}` : ''}`,
+        body: messageBody,
         attachment: fs.createReadStream(imgPath)
       }, threadID, () => {
         // Then send the audio
         api.sendMessage({
-          body: "🎧 Here's your music!",
           attachment: fs.createReadStream(audioPath)
         }, threadID, () => {
           // Cleanup files
@@ -191,7 +177,7 @@ module.exports.run = async function ({ api, event, args }) {
         });
       });
     } else {
-      // Send only audio
+      // Send only audio if no thumbnail
       api.sendMessage({
         body: messageBody,
         attachment: fs.createReadStream(audioPath)
@@ -218,7 +204,7 @@ module.exports.run = async function ({ api, event, args }) {
     } else if (error.response?.status === 404) {
       errorMessage = "❌ Song not found. Please try a different search term.";
     } else if (error.response?.data) {
-      errorMessage = `❌ API Error: ${JSON.stringify(error.response.data)}`;
+      errorMessage = `❌ API Error: ${error.response.data.message || JSON.stringify(error.response.data)}`;
     }
     
     return api.sendMessage(errorMessage, threadID, messageID);

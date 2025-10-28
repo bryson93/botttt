@@ -20,11 +20,20 @@ module.exports.run = async function ({ api, event }) {
         api.sendMessage("🎬 𝗙𝗲𝘁𝗰𝗵𝗶𝗻𝗴 𝗮 𝗿𝗮𝗻𝗱𝗼𝗺 𝗦𝗵𝗼𝘁𝗶 𝘃𝗶𝗱𝗲𝗼, 𝗽𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁...", event.threadID, event.messageID);
 
         // API call to the new endpoint
-        const response = await axios.get('https://api.ccprojectsapis-jonell.gleeze.com/api/shoti');
+        const response = await axios.get('https://api.ccprojectsapis-jonell.gleeze.com/api/shoti', {
+            timeout: 30000
+        });
         
+        console.log('API Response:', response.data); // Debug log
+
         const data = response.data;
-        if (!data || !data.url) {
-            return api.sendMessage('❌ 𝗙𝗮𝗶𝗹𝗲𝗱 𝘁𝗼 𝗳𝗲𝘁𝗰𝗵 𝗮 𝗦𝗵𝗼𝘁𝗶 𝘃𝗶𝗱𝗲𝗼. 𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿.', event.threadID, event.messageID);
+        
+        // Check different possible response structures
+        let videoUrl = data.url || data.video || data.content || data.data?.url || data.data?.video;
+        
+        if (!videoUrl) {
+            console.log('No video URL found in response:', data);
+            return api.sendMessage('❌ 𝗡𝗼 𝘃𝗶𝗱𝗲𝗼 𝗳𝗼𝘂𝗻𝗱 𝗶𝗻 𝘁𝗵𝗲 𝗿𝗲𝘀𝗽𝗼𝗻𝘀𝗲. 𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿.', event.threadID, event.messageID);
         }
 
         const fileName = `${event.messageID}.mp4`;
@@ -32,8 +41,9 @@ module.exports.run = async function ({ api, event }) {
 
         const downloadResponse = await axios({
             method: 'GET',
-            url: data.url,
+            url: videoUrl,
             responseType: 'stream',
+            timeout: 60000
         });
 
         const writer = fs.createWriteStream(filePath);
@@ -48,12 +58,13 @@ module.exports.run = async function ({ api, event }) {
             }, event.messageID);
         });
 
-        writer.on('error', () => {
+        writer.on('error', (error) => {
+            console.error('Download error:', error);
             api.sendMessage('🚫 𝗘𝗿𝗿𝗼𝗿 𝗱𝗼𝘄𝗻𝗹𝗼𝗮𝗱𝗶𝗻𝗴 𝘁𝗵𝗲 𝘃𝗶𝗱𝗲𝗼. 𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻.', event.threadID, event.messageID);
         });
 
     } catch (error) {
-        console.error('Error fetching Shoti video:', error);
+        console.error('Error fetching Shoti video:', error.message);
         api.sendMessage('🚫 𝗘𝗿𝗿𝗼𝗿 𝗳𝗲𝘁𝗰𝗵𝗶𝗻𝗴 𝗦𝗵𝗼𝘁𝗶 𝘃𝗶𝗱𝗲𝗼. 𝗧𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿.', event.threadID, event.messageID);
     }
 };

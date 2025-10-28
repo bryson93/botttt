@@ -208,21 +208,36 @@ module.exports.run = async function ({ api, event, args }) {
 
     api.unsendMessage(waitingMsg.messageID);
     
-    // Get current time and date
+    // Get user info who requested the song
+    let userName = "User";
+    try {
+      const userInfo = await api.getUserInfo(senderID);
+      userName = userInfo[senderID]?.name || "User";
+    } catch (error) {
+      console.error("❌ Error getting user info:", error.message);
+    }
+    
+    // Get Philippines time and date
     const now = new Date();
-    const time = now.toLocaleTimeString('en-US', { 
+    const phTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+    
+    const time = phTime.toLocaleTimeString('en-US', { 
+      timeZone: "Asia/Manila",
       hour12: true, 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      second: '2-digit'
     });
-    const date = now.toLocaleDateString('en-US', {
+    
+    const date = phTime.toLocaleDateString('en-US', {
+      timeZone: "Asia/Manila",
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
 
-    // Updated message format with stylish fonts
-    await api.sendMessage(`🎵 𝗵𝗲𝗿𝗲'𝘀 𝘆𝗼𝘂𝗿 𝗿𝗲𝗾𝘂𝗲𝘀𝘁 𝘀𝗼𝗻𝗴 𝗲𝗻𝗷𝗼𝘆!\n\n📝 𝗿𝗲𝗾𝘂𝗲𝘀𝘁𝗲𝗱 𝘀𝗼𝗻𝗴 𝗯𝘆: ${userRequest}\n⏰ 𝘁𝗶𝗺𝗲: ${time}\n📅 𝗱𝗮𝘁𝗲: ${date}`, threadID);
+    // Updated message format with song request name
+    await api.sendMessage(`🎵 𝗵𝗲𝗿𝗲'𝘀 𝘆𝗼𝘂𝗿 𝗿𝗲𝗾𝘂𝗲𝘀𝘁 𝘀𝗼𝗻𝗴 𝗲𝗻𝗷𝗼𝘆!\n\n📝 𝗿𝗲𝗾𝘂𝗲𝘀𝘁𝗲𝗱 𝘀𝗼𝗻𝗴 𝗯𝘆: ${userName}\n⏰ 𝘁𝗶𝗺𝗲: ${time} (Philippines)\n🎶 𝘀𝗼𝗻𝗴 𝗿𝗲𝗾𝘂𝗲𝘀𝘁: ${userRequest}\n📅 𝗱𝗮𝘁𝗲: ${date}`, threadID);
 
     // Download audio from YouTube
     console.log("📥 Downloading audio from YouTube...");
